@@ -3,11 +3,11 @@ ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library wi
 
 ## Current state: ![](https://progress-bar.xyz/2?scale=22&suffix=/22)
 <details>
-  <summary><img src="https://progress-bar.xyz/2?scale=4&suffix=/4"/> Win32</summary>
+  <summary><img src="https://progress-bar.xyz/3?scale=4&suffix=/4"/> Win32</summary>
 
   - [x] Window
   - [x] Event
-  - ![](https://progress-bar.xyz/0?scale=2&suffix=/2) Context management
+  - ![](https://progress-bar.xyz/1?scale=2&suffix=/2) Context management
     - [x] OpenGL
     - [ ] Vulkan
 </details>
