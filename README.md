@@ -36,7 +36,7 @@ ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library wi
       - ![](https://progress-bar.xyz/0?scale=3&suffix=/3) Context management
           - [ ] OpenGL
           - [ ] Vulkan
-          - [ ] Cocoa
+          - [ ] Metal
   - ![](https://progress-bar.xyz/0?scale=5&suffix=/5) IOS
       - [ ] Window
       - [ ] Event
