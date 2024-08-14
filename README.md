@@ -28,7 +28,7 @@ ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library wi
         - [ ] Vulkan
 </details>
 <details>
-  <summary><img src="https://progress-bar.xyz/0?scale=8&suffix=/8"/> Apple</summary>
+  <summary><img src="https://progress-bar.xyz/0?scale=10&suffix=/10"/> Apple</summary>
 
   - ![](https://progress-bar.xyz/0?scale=5&suffix=/5) MacOS
       - [ ] Window
