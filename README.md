@@ -1,7 +1,7 @@
 # Zig Windowing Library
 ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library with loop-based event polling (like SDL) and aimed to be lightweight thanks to zig's conditional compilation.
 
-## Current state: ![](https://progress-bar.xyz/2?scale=22&suffix=/22)
+## Current state: ![](https://progress-bar.xyz/3?scale=22&suffix=/22)
 <details>
   <summary><img src="https://progress-bar.xyz/3?scale=4&suffix=/4"/> Win32</summary>
 
