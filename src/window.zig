@@ -1,16 +1,17 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const mconfig = @import("config");
+const config = @import("config");
 const ZWL = @import("zwl.zig");
 
 const Allocator = std.mem.Allocator;
 
 const Error = ZWL.Error;
+const GLContext = ZWL.GLContext;
 const Zwl = ZWL.Zwl;
 
 const Native = switch (builtin.os.tag) {
     .windows => @import("windows/window.zig"),
-    .linux => if (mconfig.USE_WAYLAND)
+    .linux => if (config.USE_WAYLAND)
         @import("linux/wayland/window.zig")
     else
         @import("linux/xorg/window.zig"),
@@ -62,7 +63,7 @@ pub const Window = struct {
         hidden: bool = false,
         no_decoration: bool = false,
         floating: bool = false,
-        hideCursor: bool = false,
+        hide_mouse: bool = false,
     };
 
     pub const Position = union(enum) {
@@ -94,20 +95,20 @@ pub const Window = struct {
         flags: Flags = .{},
     };
 
-    pub fn create(owner: *Zwl, config: Config) Error!*Window {
+    pub fn create(owner: *Zwl, wConfig: Config) Error!*Window {
         const self = owner.allocator.create(Window) catch |e| {
             return owner.setError("Cannot allocate window", .{}, e);
         };
         errdefer owner.allocator.destroy(self);
 
-        std.debug.assert((config.sizeLimits.wmin orelse 0) <
-            (config.sizeLimits.wmax orelse std.math.maxInt(u32)));
-        std.debug.assert((config.sizeLimits.hmin orelse 0) <
-            (config.sizeLimits.hmax orelse std.math.maxInt(u32)));
+        std.debug.assert((wConfig.sizeLimits.wmin orelse 0) <
+            (wConfig.sizeLimits.wmax orelse std.math.maxInt(u32)));
+        std.debug.assert((wConfig.sizeLimits.hmin orelse 0) <
+            (wConfig.sizeLimits.hmax orelse std.math.maxInt(u32)));
 
         self.owner = owner;
-        self.config = config;
-        try self.native.init(owner, config);
+        self.config = wConfig;
+        try self.native.init(owner, wConfig);
         errdefer self.native.deinit();
 
         return self;
@@ -117,6 +118,8 @@ pub const Window = struct {
         self.native.deinit();
         self.owner.allocator.destroy(self);
     }
+
+    pub const createGLContext = GLContext.create;
 
     pub const getPosition = Native.NativeWindow.getPosition;
     pub const setPosition = Native.NativeWindow.setPosition;

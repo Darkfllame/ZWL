@@ -14,7 +14,7 @@ const Zwl = ZWL.Zwl;
 const Event = ZWL.Event;
 const Key = ZWL.Key;
 
-const WND_PTR_PROP_NAME = internal.utf8ToUtf16Z(undefined, "ZWL") catch unreachable;
+pub const WND_PTR_PROP_NAME = internal.utf8ToUtf16Z(undefined, "ZWL") catch unreachable;
 
 const MAX_U32 = math.maxInt(u32);
 
@@ -86,7 +86,7 @@ pub const NativeWindow = struct {
 
         self.handle = handle;
 
-        window.setMouseVisible(!config.flags.hideCursor);
+        window.setMouseVisible(!config.flags.hide_mouse);
     }
 
     pub fn deinit(self: *NativeWindow) void {
@@ -271,7 +271,12 @@ pub const NativeWindow = struct {
     }
 
     pub fn setMousePos(window: *Window, x: u32, y: u32) void {
+        if (window.native.lastMouseX == x and window.native.lastMouseY == y) {
+            return;
+        }
         var pos: W32.POINT = .{ .x = @bitCast(x), .y = @bitCast(y) };
+        window.native.lastMouseX = @intCast(x);
+        window.native.lastMouseX = @intCast(y);
         _ = W32.ClientToScreen(window.native.handle, &pos);
         _ = W32.SetCursorPos(pos.x, pos.y);
     }
@@ -426,14 +431,12 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
                 event.polledEvent = Event{ .key = .{
                     .window = window,
                     .key = .left_shift,
-                    .scancode = scancode,
                     .action = action,
                     .mods = mods,
                 } };
                 event.polledEvent2 = Event{ .key = .{
                     .window = window,
                     .key = .right_shift,
-                    .scancode = scancode,
                     .action = action,
                     .mods = mods,
                 } };
@@ -444,14 +447,12 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
                 event.polledEvent = Event{ .key = .{
                     .window = window,
                     .key = key,
-                    .scancode = scancode,
                     .action = .press,
                     .mods = mods,
                 } };
                 event.polledEvent2 = Event{ .key = .{
                     .window = window,
                     .key = key,
-                    .scancode = scancode,
                     .action = .release,
                     .mods = mods,
                 } };
@@ -461,7 +462,6 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
                 event.polledEvent = Event{ .key = .{
                     .window = window,
                     .key = key,
-                    .scancode = scancode,
                     .action = action,
                     .mods = mods,
                 } };
@@ -502,7 +502,7 @@ fn getWindowFullsize(
     fullHeight.* = @bitCast(rect.bottom - rect.top);
 }
 
-fn getKeyMods() Key.Mods {
+pub fn getKeyMods() Key.Mods {
     var mods: Key.Mods = .{};
 
     if (W32.GetKeyState(0x10) & 0x8000 != 0)

@@ -3,6 +3,7 @@ const builtin = @import("builtin");
 const config = @import("config");
 const window = @import("window.zig");
 const event = @import("event.zig");
+const context = @import("context.zig");
 
 const Allocator = std.mem.Allocator;
 
@@ -20,6 +21,7 @@ const Native = switch (builtin.os.tag) {
 pub const Window = window.Window;
 pub const Event = event.Event;
 pub const Key = event.Key;
+pub const GLContext = context.GLContext;
 
 pub const Error = error{
     OutOfMemory,

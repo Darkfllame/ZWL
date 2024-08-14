@@ -2,6 +2,7 @@ const std = @import("std");
 const ZWL = @import("../zwl.zig");
 const W32 = @import("w32.zig");
 const window = @import("window.zig");
+const context = @import("context.zig");
 
 const unicode = std.unicode;
 const Allocator = std.mem.Allocator;
@@ -37,7 +38,12 @@ pub inline fn utf16ToUtf8Z(allocator: Allocator, utf16: []const u16) error{ Inva
 
 pub const NativeData = struct {
     hInstance: W32.HINSTANCE,
-    disabledMouseWindow: ?*ZWL.Window,
+    /// Used to query WGL extensions
+    helperWindow: struct {
+        handle: W32.HWND,
+        dc: W32.HDC,
+        glrc: W32.HGLRC,
+    },
 };
 
 pub const KEYCODES: [512]ZWL.Key = blk: {
@@ -171,7 +177,6 @@ pub const KEYCODES: [512]ZWL.Key = blk: {
 pub fn init(lib: *Zwl) Error!void {
     const hInstance: W32.HINSTANCE = @ptrCast(W32.GetModuleHandleW(null));
     lib.native.hInstance = hInstance;
-    lib.native.disabledMouseWindow = null;
 
     if (W32.RegisterClassExW(&.{
         .style = W32.CS_HREDRAW | W32.CS_VREDRAW | W32.CS_OWNDC,
@@ -180,7 +185,47 @@ pub fn init(lib: *Zwl) Error!void {
         .hCursor = W32.LoadCursorW(null, W32.IDC_ARROW),
         .lpszClassName = WND_CLASS_NAME.ptr,
     }) == 0) return lib.setError("Cannot register window class", .{}, Error.Win32);
+
+    const helperWindow = &lib.native.helperWindow;
+    const hWindow = W32.CreateWindowExW(
+        0,
+        WND_CLASS_NAME.ptr,
+        comptime (utf8ToUtf16Z(undefined, "ZWL helper window") catch unreachable).ptr,
+        0,
+        0,
+        0,
+        1,
+        1,
+        null,
+        null,
+        hInstance,
+        null,
+    ) orelse {
+        return lib.setError("Cannot create helper window", .{}, Error.Win32);
+    };
+    errdefer _ = W32.DestroyWindow(hWindow);
+    _ = W32.ShowWindow(hWindow, W32.SW_HIDE);
+    helperWindow.handle = hWindow;
+
+    { // create helper window opengl context
+        const dc = W32.GetDC(hWindow) orelse {
+            return lib.setError("Cannot get device context from helper window", .{}, Error.Win32);
+        };
+        helperWindow.dc = dc;
+
+        if (W32.SetPixelFormat(dc, W32.ChoosePixelFormat(dc, &context.PFD), &context.PFD) == 0) {
+            return lib.setError("Cannot set pixel format for device context", .{}, Error.Win32);
+        }
+
+        const glrc = W32.wglCreateContext(dc) orelse {
+            return lib.setError("Cannot create WGL context", .{}, Error.Win32);
+        };
+        errdefer _ = W32.wglDeleteContext(glrc);
+        helperWindow.glrc = glrc;
+    }
 }
 pub fn deinit(lib: *Zwl) void {
-    std.debug.assert(W32.UnregisterClassW(WND_CLASS_NAME.ptr, lib.native.hInstance) != 0);
+    _ = W32.wglDeleteContext(lib.native.helperWindow.glrc);
+    _ = W32.DestroyWindow(lib.native.helperWindow.handle);
+    _ = W32.UnregisterClassW(WND_CLASS_NAME.ptr, lib.native.hInstance);
 }

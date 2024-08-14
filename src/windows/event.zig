@@ -1,16 +1,19 @@
 const std = @import("std");
 const ZWL = @import("../zwl.zig");
 const W32 = @import("w32.zig");
+const window = @import("window.zig");
 
 const Window = ZWL.Window;
 const Error = ZWL.Error;
 const Event = ZWL.Event;
 const Zwl = ZWL.Zwl;
+const Key = ZWL.Key;
 
 pub var polledEvent: ?Event = null;
 pub var polledEvent2: ?Event = null;
 
 pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
+    _ = lib; // autofix
     if (polledEvent2) |pe2| {
         polledEvent2 = null;
         return pe2;
@@ -36,15 +39,33 @@ pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
         }
     }
 
-    if (lib.native.disabledMouseWindow) |window| {
-        var width: u32 = undefined;
-        var height: u32 = undefined;
-        window.getSize(&width, &height);
+    if (W32.GetActiveWindow()) |handle| {
+        if (@as(?*Window, @ptrCast(@alignCast(W32.GetPropW(handle, window.WND_PTR_PROP_NAME.ptr))))) |wnd| {
+            const keys = [_]struct { u8, Key }{
+                .{ 0xA0, .left_shift },
+                .{ 0xA1, .right_shift },
+                .{ 0x5B, .left_super },
+                .{ 0x5C, .right_super },
+            };
 
-        if (window.native.lastMouseX != width / 2 or
-            window.native.lastMouseY != height / 2)
-        {
-            window.setMousePos(width / 2, height / 2);
+            for (keys) |keypair| {
+                const vk = keypair[0];
+                const key = keypair[1];
+
+                if (W32.GetKeyState(vk) & 0x8000 != 0) {
+                    continue;
+                }
+                if (wnd.native.keys[@intFromEnum(key)] != .press) {
+                    continue;
+                }
+
+                return Event{ .key = .{
+                    .window = wnd,
+                    .key = key,
+                    .action = .release,
+                    .mods = window.getKeyMods(),
+                } };
+            }
         }
     }
 

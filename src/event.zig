@@ -48,8 +48,6 @@ pub const Event = union(enum) {
     key: struct {
         window: *Window,
         key: Key,
-        /// Platform-dependent keys.
-        scancode: u32,
         action: Key.Action,
         mods: Key.Mods,
     },

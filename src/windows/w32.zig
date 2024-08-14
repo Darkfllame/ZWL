@@ -533,6 +533,28 @@ pub const HTTRANSPARENT: UINT = 0xFFFFFFFF;
 pub const HTVSCROLL: UINT = 7;
 pub const HTZOOM: UINT = 9;
 
+pub const DBT_NO_DISK_SPACE: DWORD = 0x0047;
+pub const DBT_LOW_DISK_SPACE: DWORD = 0x0048;
+pub const DBT_CONFIGMGPRIVATE: DWORD = 0x7FFF;
+pub const DBT_DEVICEARRIVAL: DWORD = 0x8000;
+pub const DBT_DEVICEQUERYREMOVE: DWORD = 0x8001;
+pub const DBT_DEVICEQUERYREMOVEFAILED: DWORD = 0x8002;
+pub const DBT_DEVICEREMOVEPENDING: DWORD = 0x8003;
+pub const DBT_DEVICEREMOVECOMPLETE: DWORD = 0x8004;
+pub const DBT_DEVICETYPESPECIFIC: DWORD = 0x8005;
+pub const DBT_CUSTOMEVENT: DWORD = 0x8006;
+pub const DBT_DEVTYP_OEM: DWORD = 0x00000000;
+pub const DBT_DEVTYP_DEVNODE: DWORD = 0x00000001;
+pub const DBT_DEVTYP_VOLUME: DWORD = 0x00000002;
+pub const DBT_DEVTYP_PORT: DWORD = 0x00000003;
+pub const DBT_DEVTYP_NET: DWORD = 0x00000004;
+pub const DBT_DEVTYP_DEVICEINTERFACE: DWORD = 0x00000005;
+pub const DBT_DEVTYP_HANDLE: DWORD = 0x00000006;
+
+pub const DEVICE_NOTIFY_WINDOW_HANDLE: DWORD = 0x00000000;
+pub const DEVICE_NOTIFY_SERVICE_HANDLE: DWORD = 0x00000001;
+pub const DEVICE_NOTIFY_ALL_INTERFACE_CLASSES: DWORD = 0x00000004;
+
 pub const WNDCLASSEXW = extern struct {
     cbSize: UINT = @sizeOf(WNDCLASSEXW),
     style: UINT,
@@ -666,6 +688,19 @@ pub const MINMAXINFO = extern struct {
     ptMinTrackSize: POINT,
     ptMaxTrackSize: POINT,
 };
+pub const DEV_BROADCAST_DEVICEINTERFACE_W = extern struct {
+    dbcc_size: DWORD,
+    dbcc_devicetype: DWORD,
+    dbcc_reserved: DWORD,
+    dbcc_classguid: GUID,
+    dbcc_name: [1]u16,
+};
+pub const GUID = extern struct {
+    Data1: u32,
+    Data2: u16,
+    Data3: u16,
+    Data4: [8]u8,
+};
 
 pub const HRESULT = i32;
 pub inline fn SUCCEEDED(hr: HRESULT) bool {
@@ -749,7 +784,8 @@ pub extern "Comctl32" fn TaskDialogIndirect(
 
 pub extern "Opengl32" fn wglCreateContext(hdc: HDC) callconv(WINAPI) ?HGLRC;
 pub extern "Opengl32" fn wglDeleteContext(hglrc: HGLRC) callconv(WINAPI) BOOL;
-pub extern "Opengl32" fn wglMakeCurrent(hdc: ?HDC, hglrc: ?HGLRC) callconv(WINAPI) BOOL;
+pub extern "Opengl32" fn wglMakeCurrent(hdc: HDC, hglrc: ?HGLRC) callconv(WINAPI) BOOL;
 
 pub extern "Gdi32" fn SetPixelFormat(hdc: HDC, format: i32, ppfd: *const PIXELFORMATDESCRIPTOR) callconv(WINAPI) BOOL;
 pub extern "Gdi32" fn ChoosePixelFormat(hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR) callconv(WINAPI) i32;
+pub extern "Gdi32" fn SwapBuffers(hdc: HDC) callconv(WINAPI) BOOL;
