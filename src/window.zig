@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const mconfig = @import("config");
 const ZWL = @import("zwl.zig");
 
 const Allocator = std.mem.Allocator;
@@ -9,6 +10,12 @@ const Zwl = ZWL.Zwl;
 
 const Native = switch (builtin.os.tag) {
     .windows => @import("windows/window.zig"),
+    .linux => if (mconfig.USE_WAYLAND)
+        @import("linux/wayland/window.zig")
+    else
+        @import("linux/xorg/window.zig"),
+    .macos => @import("macos/window.zig"),
+    .ios => @import("ios/window.zig"),
     else => @compileError("Unsupported target"),
 };
 

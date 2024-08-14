@@ -23,7 +23,7 @@ pub fn main() !void {
     defer window.destroy();
 
     loop: while (true) {
-        while (try zwl.pollEvent()) |event| switch (event) {
+        while (try zwl.pollEvent(null)) |event| switch (event) {
             .quit, .windowClosed => break :loop,
             .key => |key| {
                 std.debug.print("key {s}: {s}\n", .{ @tagName(key.action), @tagName(key.key) });

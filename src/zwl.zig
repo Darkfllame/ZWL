@@ -8,6 +8,12 @@ const Allocator = std.mem.Allocator;
 
 const Native = switch (builtin.os.tag) {
     .windows => @import("windows/init.zig"),
+    .linux => if (config.USE_WAYLAND)
+        @import("linux/wayland/init.zig")
+    else
+        @import("linux/xorg/init.zig"),
+    .macos => @import("macos/init.zig"),
+    .ios => @import("ios/init.zig"),
     else => @compileError("Unsupported target"),
 };
 
