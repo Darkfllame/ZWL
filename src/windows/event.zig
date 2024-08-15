@@ -11,18 +11,20 @@ const Key = ZWL.Key;
 
 pub var polledEvent: ?Event = null;
 pub var polledEvent2: ?Event = null;
+pub var pollingLib: ?*Zwl = null;
 
 pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
-    _ = lib; // autofix
     if (polledEvent2) |pe2| {
         polledEvent2 = null;
         return pe2;
     }
     polledEvent = null;
+    pollingLib = lib;
+    const user32 = &lib.native.user32.funcs;
 
     var msg: W32.MSG = undefined;
 
-    if (W32.PeekMessageW(
+    if (user32.PeekMessageW(
         &msg,
         if (opt_window) |wnd| wnd.native.handle else null,
         0,
@@ -32,15 +34,15 @@ pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
         switch (msg.message) {
             W32.WM_QUIT => return .{ .quit = msg.wParam },
             else => {
-                _ = W32.TranslateMessage(&msg);
-                _ = W32.DispatchMessageW(&msg);
+                _ = user32.TranslateMessage(&msg);
+                _ = user32.DispatchMessageW(&msg);
                 return polledEvent;
             },
         }
     }
 
-    if (W32.GetActiveWindow()) |handle| {
-        if (@as(?*Window, @ptrCast(@alignCast(W32.GetPropW(handle, window.WND_PTR_PROP_NAME.ptr))))) |wnd| {
+    if (user32.GetActiveWindow()) |handle| {
+        if (@as(?*Window, @ptrCast(@alignCast(user32.GetPropW(handle, window.WND_PTR_PROP_NAME.ptr))))) |wnd| {
             const keys = [_]struct { u8, Key }{
                 .{ 0xA0, .left_shift },
                 .{ 0xA1, .right_shift },
@@ -52,7 +54,7 @@ pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
                 const vk = keypair[0];
                 const key = keypair[1];
 
-                if (W32.GetKeyState(vk) & 0x8000 != 0) {
+                if (user32.GetKeyState(vk) & 0x8000 != 0) {
                     continue;
                 }
                 if (wnd.native.keys[@intFromEnum(key)] != .press) {
@@ -63,7 +65,7 @@ pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
                     .window = wnd,
                     .key = key,
                     .action = .release,
-                    .mods = window.getKeyMods(),
+                    .mods = window.getKeyMods(user32),
                 } };
             }
         }

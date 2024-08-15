@@ -1,7 +1,7 @@
 # Zig Windowing Library
 ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library with loop-based event polling (like SDL) and aimed to be lightweight thanks to zig's conditional compilation.
 
-## Current state: ![](https://progress-bar.xyz/3?scale=22&suffix=/22)
+## Current state: ![](https://progress-bar.xyz/3?scale=17&suffix=/17)
 <details>
   <summary><img src="https://progress-bar.xyz/3?scale=4&suffix=/4"/> Win32</summary>
 
@@ -14,7 +14,7 @@ ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library wi
 <details>
   <summary><img src="https://progress-bar.xyz/0?scale=8&suffix=/8"/> Linux</summary>
   
-  - ![](https://progress-bar.xyz/0?scale=4&suffix=/4) xorg
+  - ![](https://progress-bar.xyz/0?scale=4&suffix=/4) x11
     - [ ] Window
     - [ ] Event
     - ![](https://progress-bar.xyz/0?scale=2&suffix=/2) Context management
@@ -28,29 +28,21 @@ ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library wi
         - [ ] Vulkan
 </details>
 <details>
-  <summary><img src="https://progress-bar.xyz/0?scale=10&suffix=/10"/> Apple</summary>
+  <summary><img src="https://progress-bar.xyz/0?scale=5&suffix=/5"/> MacOS</summary>
 
-  - ![](https://progress-bar.xyz/0?scale=5&suffix=/5) MacOS
-      - [ ] Window
-      - [ ] Event
-      - ![](https://progress-bar.xyz/0?scale=3&suffix=/3) Context management
-          - [ ] OpenGL
-          - [ ] Vulkan
-          - [ ] Metal
-  - ![](https://progress-bar.xyz/0?scale=5&suffix=/5) IOS
-      - [ ] Window
-      - [ ] Event
-      - ![](https://progress-bar.xyz/0?scale=3&suffix=/3) Context management
-          - [ ] OpenGL
-          - [ ] Vulkan
-          - [ ] Metal
+  - [ ] Window
+  - [ ] Event
+  - ![](https://progress-bar.xyz/0?scale=3&suffix=/3) Context management
+      - [ ] OpenGL
+      - [ ] Vulkan
+      - [ ] Metal
 </details>
 
 ###
 ZWL is very WIP, so expect bugs, inconsistencies and lack of support on certain platforms. If you wish you can help me by [contributing](#contributing) to this project via pull requests or filing issues.
 
 # Contributing
-Feel free to contribute to the library by making PRs or by filing issues. My machine is a windows one, so I'll prioritize my work on the Win32 implementation.
+Feel free to contribute to the library by making PRs or by filing issues. My machine is a windows one, so I'll prioritize my work on the Win32 implementation and linux (with WSL).
 
 ## Contributor Note
 - Constants are **CAPITAL_SNAKE_CASE**
@@ -59,4 +51,4 @@ Feel free to contribute to the library by making PRs or by filing issues. My mac
 - If you need to add an option to the build config, make so that the build argument is unconditional and in **CAPITAL_SNAKE_CASE**.
 - Avoid blocking operations.
 - If you need to change something in the user API, make sure it makes sense with the rest of the API.
-- Follow the zen of zig (type `zig zen` in your console to get it, or check out [the documentation](https://ziglang.org/documentation/0.13.0/#Zen)).
+- Make sure that your platform can be cross-compiled (avoid static linking)

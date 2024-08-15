@@ -19,27 +19,18 @@ pub fn main() !void {
         .title = "ZWL demo",
         .width = 800,
         .height = 600,
-        .flags = .{
-            .hide_mouse = true,
-        },
     });
-    defer {
-        window.destroy();
-    }
+    defer window.destroy();
     const ctx = try window.createGLContext(.{});
     defer ctx.destroy();
-    try ctx.makeCurrent();
+    try zwl.makeContextCurrent(ctx);
 
-    loop: while (true) {
-        while (try zwl.pollEvent(null)) |event| switch (event) {
-            .quit, .windowClosed => break :loop,
-            .key => |key| {
-                if (key.key == .escape and key.action == .press) {
-                    break :loop;
-                }
-            },
-            else => {},
-        };
-        window.setMousePos(400, 300);
+    gameloop: while (true) {
+        while (try zwl.pollEvent(null)) |event| {
+            switch (event) {
+                .quit, .windowClosed => break :gameloop,
+                else => {},
+            }
+        }
     }
 }

@@ -1,3 +1,0 @@
-comptime {
-    @compileError("Platform WIP");
-}

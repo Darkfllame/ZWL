@@ -7,14 +7,10 @@ const context = @import("context.zig");
 
 const Allocator = std.mem.Allocator;
 
-const Native = switch (builtin.os.tag) {
-    .windows => @import("windows/init.zig"),
-    .linux => if (config.USE_WAYLAND)
-        @import("linux/wayland/init.zig")
-    else
-        @import("linux/xorg/init.zig"),
-    .macos => @import("macos/init.zig"),
-    .ios => @import("ios/init.zig"),
+pub const platform = switch (builtin.os.tag) {
+    .windows => @import("windows/platform.zig"),
+    .linux => @import("linux/platform.zig"),
+    .macos => @import("macos/platform.zig"),
     else => @compileError("Unsupported target"),
 };
 
@@ -23,7 +19,12 @@ pub const Event = event.Event;
 pub const Key = event.Key;
 pub const GLContext = context.GLContext;
 
-pub const Error = error{
+pub const FunctionLoaderError = error{
+    LibraryNotFound,
+    FunctionNotFound,
+};
+
+pub const Error = FunctionLoaderError || error{
     OutOfMemory,
     Win32,
     InvalidUtf8,
@@ -36,7 +37,8 @@ pub const Zwl = struct {
     errorBuffer: [config.ERROR_BUFFER_SIZE]u8,
     errFormatBuffer: [config.ERROR_BUFFER_SIZE]u8,
     currentError: ?[]u8,
-    native: Native.NativeData,
+    platform: Platform,
+    native: platform.NativeData,
 
     pub fn init(self: *Zwl, allocator: Allocator, iConfig: InitConfig) Error!void {
         _ = iConfig;
@@ -46,11 +48,18 @@ pub const Zwl = struct {
             .errFormatBuffer = [_]u8{0} ** config.ERROR_BUFFER_SIZE,
             .currentError = null,
             .native = undefined,
+            .platform = undefined,
         };
-        try Native.init(self);
+        comptime {
+            if (@TypeOf(platform.setPlatform) != fn (*Platform) void) {
+                @compileError("Expected platform.setPlatform to be 'fn (*Platform) void'");
+            }
+        }
+        platform.setPlatform(&self.platform);
+        try self.platform.init(self);
     }
     pub fn deinit(self: *Zwl) void {
-        Native.deinit(self);
+        self.platform.deinit(self);
     }
 
     pub fn clearError(self: *Zwl) void {
@@ -84,15 +93,89 @@ pub const Zwl = struct {
 
     pub const createWindow = Window.create;
 
+    pub const makeContextCurrent = GLContext.makeCurrent;
+
     pub const pollEvent = event.pollEvent;
 };
 
-pub const NativeDecl = struct {
+pub const NativeFunction = struct {
     name: [:0]const u8,
     type: type,
 };
 
-pub fn checkNativeDecls(comptime T: type, comptime decls: []const NativeDecl) void {
+pub const Platform = struct {
+    init: *const fn (*Zwl) Error!void,
+    deinit: *const fn (*Zwl) void,
+    window: struct {
+        init: *const fn (*platform.Window, *Zwl, Window.Config) Error!void,
+        deinit: *const fn (*platform.Window) void,
+        setPosition: *const fn (*Window, u32, u32) void,
+        getSize: *const fn (*Window, ?*u32, ?*u32) void,
+        setSize: *const fn (*Window, u32, u32) void,
+        setSizeLimits: *const fn (*Window, ?u32, ?u32, ?u32, ?u32) void,
+        getFramebufferSize: *const fn (*Window, ?*u32, ?*u32) void,
+        setVisible: *const fn (*Window, bool) void,
+        setTitle: *const fn (*Window, []const u8) Error!void,
+        getTitle: *const fn (*Window) []const u8,
+        isFocused: *const fn (*Window) bool,
+        getMousePos: *const fn (*Window, ?*u32, ?*u32) void,
+        setMousePos: *const fn (*Window, u32, u32) void,
+        setMouseVisible: *const fn (*Window, bool) void,
+    },
+    event: struct {
+        pollEvent: *const fn (*Zwl, ?*Window) Error!?Event,
+    },
+    glContext: struct {
+        init: *const fn (*platform.GLContext, *Zwl, *Window, GLContext.Config) Error!void,
+        deinit: *const fn (*platform.GLContext) void,
+        makeCurrent: *const fn (*Zwl, ?*GLContext) Error!void,
+        swapBuffers: *const fn (*GLContext) Error!void,
+    },
+};
+
+pub fn FunctionLoader(comptime libName: []const u8, comptime decls: []const NativeFunction) type {
+    const Type = std.builtin.Type;
+    comptime var fields: [decls.len]Type.StructField = undefined;
+    for (decls, 0..) |d, i| {
+        fields[i] = .{
+            .name = d.name,
+            .type = *const GetFunctionType(d.type),
+            .default_value = null,
+            .is_comptime = false,
+            .alignment = @alignOf(*const GetFunctionType(d.type)),
+        };
+    }
+    const FuncList = @Type(Type{ .Struct = .{
+        .layout = .auto,
+        .backing_integer = null,
+        .fields = &fields,
+        .decls = &.{},
+        .is_tuple = false,
+    } });
+    return struct {
+        const Self = @This();
+        const DynLib = std.DynLib;
+
+        lib: DynLib,
+        funcs: FuncList,
+
+        pub fn init(self: *Self) FunctionLoaderError!void {
+            var dl = DynLib.open(libName) catch return error.LibraryNotFound;
+            errdefer dl.close();
+            self.lib = dl;
+
+            inline for (decls) |d| {
+                @field(self.funcs, d.name) = dl.lookup(*const GetFunctionType(d.type), d.name) orelse
+                    return error.FunctionNotFound;
+            }
+        }
+        pub fn deinit(self: *Self) void {
+            self.lib.close();
+        }
+    };
+}
+
+pub fn checkNativeDecls(comptime T: type, comptime decls: []const NativeFunction) void {
     for (decls) |rDecl| {
         if (!@hasDecl(T, rDecl.name) and
             @TypeOf(@field(T, rDecl.name)) == rDecl.type)
@@ -101,4 +184,24 @@ pub fn checkNativeDecls(comptime T: type, comptime decls: []const NativeDecl) vo
                 rDecl.name ++ "\" field of type: " ++ @typeName(rDecl.type));
         }
     }
+}
+
+fn GetFunctionType(comptime T: type) type {
+    const tinfo = @typeInfo(T);
+
+    const noOptTinfo = if (tinfo == .Optional)
+        @typeInfo(tinfo.Optional.child)
+    else
+        tinfo;
+
+    const noPtrTinfo = if (noOptTinfo == .Pointer)
+        @typeInfo(noOptTinfo.Pointer.child)
+    else
+        noOptTinfo;
+
+    if (noPtrTinfo != .Fn) {
+        @compileError("Expected function type, got: " ++ @typeName(T));
+    }
+
+    return @Type(noPtrTinfo);
 }

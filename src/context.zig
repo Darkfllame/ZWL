@@ -7,25 +7,10 @@ const Error = ZWL.Error;
 const Window = ZWL.Window;
 const Zwl = ZWL.Zwl;
 
-const Native = switch (builtin.os.tag) {
-    .windows => @import("windows/context.zig"),
-    .linux => if (config.USE_WAYLAND)
-        @import("linux/wayland/context.zig")
-    else
-        @import("linux/xorg/context.zig"),
-    .macos => @import("macos/context.zig"),
-    .ios => @import("ios/context.zig"),
-    else => @compileError("Unsupported target"),
-};
-
-comptime {
-    ZWL.checkNativeDecls(Native, &.{});
-}
-
 pub const GLContext = struct {
     owner: *Window,
     config: Config,
-    native: Native.GLContext,
+    native: ZWL.platform.GLContext,
 
     pub const ClientAPI = enum(u2) {
         /// Currently unused on:
@@ -62,17 +47,27 @@ pub const GLContext = struct {
         const self = allocator.create(GLContext) catch |e| {
             return lib.setError("Cannot create GLContext", .{}, e);
         };
+        errdefer allocator.destroy(self);
         self.owner = window;
         self.config = ctxConfig;
-        try self.native.init(lib, window, ctxConfig);
-        errdefer allocator.destroy(self);
+        try lib.platform.glContext.init(&self.native, lib, window, ctxConfig);
         return self;
     }
     pub fn destroy(self: *GLContext) void {
-        self.native.deinit();
-        self.owner.owner.allocator.destroy(self);
+        const lib = self.owner.owner;
+        lib.platform.glContext.deinit(&self.native);
+        lib.allocator.destroy(self);
     }
 
-    pub const makeCurrent = Native.GLContext.makeCurrent;
-    pub const swapBuffers = Native.GLContext.swapBuffers;
+    pub inline fn makeCurrent(lib: *Zwl, opt_ctx: ?*GLContext) Error!void {
+        if (opt_ctx) |ctx| {
+            if (ctx.owner.owner != lib) {
+                @panic("Bad library passed to GLContext.makeCurrent");
+            }
+        }
+        return lib.platform.glContext.makeCurrent(lib, opt_ctx);
+    }
+    pub inline fn swapBuffers(ctx: *GLContext) Error!void {
+        return ctx.owner.owner.platform.glContext.swapBuffers(ctx);
+    }
 };

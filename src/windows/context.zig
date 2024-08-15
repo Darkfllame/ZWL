@@ -1,11 +1,16 @@
 const std = @import("std");
 const ZWL = @import("../zwl.zig");
+const internal = @import("init.zig");
 const W32 = @import("w32.zig");
 
 const Window = ZWL.Window;
 const Error = ZWL.Error;
 const Event = ZWL.Event;
 const Zwl = ZWL.Zwl;
+
+const USER32 = @TypeOf(@as(internal.NativeData, undefined).user32.funcs);
+const OPENGL32 = @TypeOf(@as(internal.NativeData, undefined).opengl32.funcs);
+const GDI32 = @TypeOf(@as(internal.NativeData, undefined).gdi32.funcs);
 
 pub const PFD = W32.PIXELFORMATDESCRIPTOR{
     .nVersion = 1,
@@ -24,46 +29,47 @@ pub const GLContext = struct {
     var previousCurrent: ?GLContext = null;
 
     dc: W32.HDC,
+    user32: *const USER32,
+    opengl32: *const OPENGL32,
+    gdi32: *const GDI32,
     handle: W32.HGLRC,
     interval: i32,
 
     pub fn init(self: *GLContext, lib: *Zwl, window: *Window, config: ZWL.GLContext.Config) Error!void {
         _ = config; // autofix
-        // const GUID_DEVINTERFACE_HID = W32.GUID{
-        //     .Data1 = 0x4d1e55b2,
-        //     .Data2 = 0xf16f,
-        //     .Data3 = 0x11cf,
-        //     .Data4 = .{
-        //         0x88, 0xcb, 0x00, 0x11,
-        //         0x11, 0x00, 0x00, 0x30,
-        //     },
-        // };
-        const dc = W32.GetDC(window.native.handle) orelse {
+        self.user32 = &lib.native.user32.funcs;
+        self.opengl32 = &lib.native.opengl32.funcs;
+        self.gdi32 = &lib.native.gdi32.funcs;
+        const user32 = self.user32;
+        const opengl32 = self.opengl32;
+        const gdi32 = self.gdi32;
+        const dc = user32.GetDC(window.native.handle) orelse {
             return lib.setError("Cannot get device context from window", .{}, Error.Win32);
         };
         self.dc = dc;
 
-        if (W32.SetPixelFormat(dc, W32.ChoosePixelFormat(dc, &PFD), &PFD) == 0) {
+        if (gdi32.SetPixelFormat(dc, gdi32.ChoosePixelFormat(dc, &PFD), &PFD) == 0) {
             return lib.setError("Cannot set pixel format for device context", .{}, Error.Win32);
         }
 
-        const handle = W32.wglCreateContext(dc) orelse {
+        const handle = opengl32.wglCreateContext(dc) orelse {
             return lib.setError("Cannot create WGL context", .{}, Error.Win32);
         };
-        errdefer _ = W32.wglDeleteContext(handle);
+        errdefer _ = opengl32.wglDeleteContext(handle);
         self.handle = handle;
     }
     pub fn deinit(self: *GLContext) void {
-        _ = W32.wglDeleteContext(self.handle);
+        _ = self.opengl32.wglDeleteContext(self.handle);
     }
 
-    pub fn makeCurrent(opt_ctx: ?*ZWL.GLContext) Error!void {
+    pub fn makeCurrent(lib: *Zwl, opt_ctx: ?*ZWL.GLContext) Error!void {
+        const opengl32 = &lib.native.opengl32.funcs;
         if (previousCurrent) |previous| {
-            _ = W32.wglMakeCurrent(previous.dc, null);
+            _ = opengl32.wglMakeCurrent(previous.dc, null);
             previousCurrent = null;
         }
         if (opt_ctx) |ctx| {
-            if (W32.wglMakeCurrent(ctx.native.dc, ctx.native.handle) == 0) {
+            if (opengl32.wglMakeCurrent(ctx.native.dc, ctx.native.handle) == 0) {
                 return ctx.owner.owner.setError("Failed to make GLContext current", .{}, Error.Win32);
             }
             previousCurrent = ctx.native;
@@ -71,6 +77,6 @@ pub const GLContext = struct {
     }
 
     pub fn swapBuffers(ctx: *ZWL.GLContext) Error!void {
-        _ = W32.SwapBuffers(ctx.native.dc);
+        _ = ctx.native.gdi32.SwapBuffers(ctx.native.dc);
     }
 };

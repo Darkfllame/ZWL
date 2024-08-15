@@ -9,52 +9,10 @@ const Error = ZWL.Error;
 const GLContext = ZWL.GLContext;
 const Zwl = ZWL.Zwl;
 
-const Native = switch (builtin.os.tag) {
-    .windows => @import("windows/window.zig"),
-    .linux => if (config.USE_WAYLAND)
-        @import("linux/wayland/window.zig")
-    else
-        @import("linux/xorg/window.zig"),
-    .macos => @import("macos/window.zig"),
-    .ios => @import("ios/window.zig"),
-    else => @compileError("Unsupported target"),
-};
-
-comptime {
-    if (!@hasDecl(Native, "NativeWindow")) {
-        @compileError("Native API doesn't have NativeWindow");
-    }
-    if (@TypeOf(Native.NativeWindow) != type) {
-        @compileError("Native.NativeWindow expected to be a type");
-    }
-    const nwInfo = @typeInfo(Native.NativeWindow);
-    switch (nwInfo) {
-        .Struct, .Opaque, .Enum, .Union => {},
-        else => @compileError("Native.NativeWindow expected to be a struct, opaque, enum or union, got: " ++ @tagName(nwInfo)),
-    }
-
-    ZWL.checkNativeDecls(Native.NativeWindow, &.{
-        .{ .name = "init", .type = fn (*Native.NativeWindow, *Zwl, Window.Config) Error!void },
-        .{ .name = "deinit", .type = fn (*Native.NativeWindow) void },
-        .{ .name = "getPosition", .type = fn (*Window, ?*u32, ?*u32) void },
-        .{ .name = "setPosition", .type = fn (*Window, u32, u32) void },
-        .{ .name = "getSize", .type = fn (*Window, ?*u32, ?*u32) void },
-        .{ .name = "setSize", .type = fn (*Window, u32, u32) void },
-        .{ .name = "setSizeLimits", .type = fn (*Window, ?u32, ?u32, ?u32, ?u32) void },
-        .{ .name = "getFramebufferSize", .type = fn (*Window, ?*u32, ?*u32) void },
-        .{ .name = "setVisible", .type = fn (*Window, bool) void },
-        .{ .name = "setTitle", .type = fn (*Window, []const u8) Error!void },
-        .{ .name = "getTitle", .type = fn (*Window) []const u8 },
-        .{ .name = "isFocused", .type = fn (*Window) bool },
-        .{ .name = "getMousePos", .type = fn (*Window, ?*u32, ?*u32) void },
-        .{ .name = "setMousePos", .type = fn (*Window, u32, u32) void },
-    });
-}
-
 pub const Window = struct {
     owner: *Zwl,
     config: Config,
-    native: Native.NativeWindow,
+    native: ZWL.platform.Window,
 
     pub const Flags = packed struct {
         /// if `no_deco` is active, this field
@@ -108,30 +66,58 @@ pub const Window = struct {
 
         self.owner = owner;
         self.config = wConfig;
-        try self.native.init(owner, wConfig);
-        errdefer self.native.deinit();
+        try owner.platform.window.init(&self.native, owner, wConfig);
+        errdefer owner.platform.window.deinit(&self.native);
 
         return self;
     }
 
     pub fn destroy(self: *Window) void {
-        self.native.deinit();
+        self.owner.platform.window.deinit(&self.native);
         self.owner.allocator.destroy(self);
     }
 
     pub const createGLContext = GLContext.create;
 
-    pub const getPosition = Native.NativeWindow.getPosition;
-    pub const setPosition = Native.NativeWindow.setPosition;
-    pub const getSize = Native.NativeWindow.getSize;
-    pub const setSize = Native.NativeWindow.setSize;
-    pub const setSizeLimits = Native.NativeWindow.setSizeLimits;
-    pub const getFramebufferSize = Native.NativeWindow.getFramebufferSize;
-    pub const setVisible = Native.NativeWindow.setVisible;
-    pub const setTitle = Native.NativeWindow.setTitle;
-    pub const getTitle = Native.NativeWindow.getTitle;
-    pub const isFocused = Native.NativeWindow.isFocused;
-    pub const setMousePos = Native.NativeWindow.setMousePos;
-    pub const getMousePos = Native.NativeWindow.getMousePos;
-    pub const setMouseVisible = Native.NativeWindow.setMouseVisible;
+    pub inline fn getPosition(self: *Window, x: ?*u32, y: ?*u32) void {
+        return self.owner.platform.window.getPosition(self, x, y);
+    }
+    pub inline fn setPosition(self: *Window, x: u32, y: u32) void {
+        return self.owner.platform.window.setPosition(self, x, y);
+    }
+    pub inline fn getSize(self: *Window, x: ?*u32, y: ?*u32) void {
+        return self.owner.platform.window.getSize(self, x, y);
+    }
+    pub inline fn setSize(self: *Window, x: u32, y: u32) void {
+        return self.owner.platform.window.setSize(self, x, y);
+    }
+    pub inline fn setSizeLimits(self: *Window, wmin: ?u32, wmax: ?u32, hmin: ?u32, hmax: ?u32) void {
+        return self.owner.platform.window.setSizeLimits(self, wmin, wmax, hmin, hmax);
+    }
+    pub inline fn getFramebufferSize(self: *Window, x: ?*u32, y: ?*u32) void {
+        return self.owner.platform.window.getFramebufferSize(self, x, y);
+    }
+    pub inline fn setVisible(self: *Window, value: bool) void {
+        return self.owner.platform.window.setVisible(self, value);
+    }
+    pub inline fn setTitle(self: *Window, title: []const u8) Error!void {
+        return self.owner.platform.window.setTitle(self, title);
+    }
+    /// The returned string is allocated via the allocator
+    /// given to `Zwl.init()`.
+    pub inline fn getTitle(self: *Window) []const u8 {
+        return self.owner.platform.window.getTitle(self);
+    }
+    pub inline fn isFocused(self: *Window) bool {
+        return self.owner.platform.window.isFocused(self);
+    }
+    pub inline fn setMousePos(self: *Window, x: u32, y: u32) void {
+        return self.owner.platform.window.setMousePos(self, x, y);
+    }
+    pub inline fn getMousePos(self: *Window, x: ?*u32, y: ?*u32) void {
+        return self.owner.platform.window.getMousePos(self, x, y);
+    }
+    pub inline fn setMouseVisible(self: *Window, value: bool) void {
+        return self.owner.platform.window.setMouseVisible(self, value);
+    }
 };

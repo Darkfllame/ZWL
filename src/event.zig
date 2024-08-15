@@ -10,12 +10,8 @@ const Zwl = ZWL.Zwl;
 
 const Native = switch (builtin.os.tag) {
     .windows => @import("windows/event.zig"),
-    .linux => if (config.USE_WAYLAND)
-        @import("linux/wayland/event.zig")
-    else
-        @import("linux/xorg/event.zig"),
+    .linux => @import("linux/event.zig"),
     .macos => @import("macos/event.zig"),
-    .ios => @import("ios/event.zig"),
     else => @compileError("Unsupported target"),
 };
 
@@ -53,4 +49,6 @@ pub const Event = union(enum) {
     },
 };
 
-pub const pollEvent = Native.pollEvent;
+pub inline fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
+    return Native.pollEvent(lib, opt_window);
+}

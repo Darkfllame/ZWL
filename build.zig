@@ -21,14 +21,6 @@ pub fn build(b: *std.Build) void {
         "A default error message that will be used by zwl.getError()",
         "No Error Message",
     );
-    addConfigOption(
-        b,
-        config,
-        bool,
-        "USE_WAYLAND",
-        "Use wayland instead of xorg for windows on linux (WIP)",
-        false,
-    );
 
     const zwl = b.addModule("zwl", .{
         .root_source_file = b.path("src/zwl.zig"),
@@ -40,6 +32,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+        .strip = if (optimize == .ReleaseFast) true else null,
     });
     exe.root_module.addImport("zwl", zwl);
 
