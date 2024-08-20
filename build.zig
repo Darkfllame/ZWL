@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -27,6 +28,8 @@ pub fn build(b: *std.Build) void {
 
     const zwl = b.addModule("zwl", .{
         .root_source_file = b.path("src/zwl.zig"),
+        .target = target,
+        .optimize = optimize,
     });
     zwl.addImport("config", config.createModule());
 

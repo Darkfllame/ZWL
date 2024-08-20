@@ -1,8 +1,5 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const c = @cImport({
-    @cInclude("../dependencies/wayland_headers/include/wayland-client.h");
-});
 
 pub const wl_registry = opaque {};
 pub const wl_surface = opaque {};
@@ -23,7 +20,7 @@ pub const wl_interface = extern struct {
 pub const wl_message = extern struct {
     name: [*:0]const u8,
     signature: [*:0]const u8,
-    types: [*:null][*]const wl_interface,
+    types: [*:null]?[*]const wl_interface,
 };
 
 pub const wl_surface_listener = extern struct {

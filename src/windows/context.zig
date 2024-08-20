@@ -26,7 +26,7 @@ pub const PFD = W32.PIXELFORMATDESCRIPTOR{
 };
 
 pub const GLContext = struct {
-    threadlocal var previousCurrent: ?GLContext = null;
+    threadlocal var currentContext: ?GLContext = null;
 
     dc: W32.HDC,
     user32: *const USER32,
@@ -181,16 +181,13 @@ pub const GLContext = struct {
 
     pub fn makeCurrent(lib: *Zwl, opt_ctx: ?*ZWL.GLContext) Error!void {
         const opengl32 = &lib.native.opengl32.funcs;
-        if (previousCurrent) |previous| {
-            _ = opengl32.wglMakeCurrent(previous.dc, null);
-            previousCurrent = null;
-        }
+        currentContext = null;
         if (opt_ctx) |ctx| {
             if (opengl32.wglMakeCurrent(ctx.native.dc, ctx.native.handle) == 0) {
                 return ctx.owner.owner.setError("Failed to make GLContext current", .{}, Error.Win32);
             }
-            previousCurrent = ctx.native;
-        }
+            currentContext = ctx.native;
+        } else _ = opengl32.wglMakeCurrent(undefined, null);
     }
 
     pub fn swapBuffers(ctx: *ZWL.GLContext) Error!void {

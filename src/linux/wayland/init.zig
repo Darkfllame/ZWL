@@ -6,8 +6,8 @@ const Error = ZWL.Error;
 const Zwl = ZWL.Zwl;
 
 const registryListener = WL.wl_registry_listener{
-    .global = registryHandleGlobal,
-    .global_remove = registryHandleGlobalRemove,
+    .global = @ptrCast(&registryHandleGlobal),
+    .global_remove = @ptrCast(&registryHandleGlobalRemove),
 };
 
 fn registryHandleGlobal(
@@ -22,18 +22,17 @@ fn registryHandleGlobal(
             return std.mem.eql(u8, a, b);
         }
     }.inner;
-    const lib: *NativeData = @as(*Zwl, @ptrCast(ud)).native.wl;
+    const lib: *NativeData = &@as(*Zwl, @ptrCast(@alignCast(ud))).native.wl;
     const spanName = std.mem.span(interface.name);
     if (eql(spanName, "wl_compositor")) {
-        lib.compositor = lib.client.funcs.wl_proxy_marshal_flags(
+        lib.compositor = @ptrCast(lib.client.funcs.wl_proxy_marshal_flags(
             @ptrCast(registry),
-            0,
             name,
-            &interface,
+            interface,
             @min(3, version),
             0,
             interface.name,
-        );
+        ));
     }
 }
 
@@ -82,7 +81,7 @@ pub fn init(lib: *Zwl) Error!void {
     wl.registry = wlcl.wl_display_get_registry(display);
     wl.display = display;
 
-    wlcl.wl_proxy_add_listener(wl.registry, &registryListener, @ptrCast(lib));
+    _ = wlcl.wl_proxy_add_listener(@ptrCast(wl.registry), @ptrCast(&registryListener), @ptrCast(lib));
 }
 
 pub fn deinit(lib: *Zwl) void {
