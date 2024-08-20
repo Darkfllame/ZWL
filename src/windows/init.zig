@@ -188,6 +188,7 @@ pub const NativeData = struct {
         .{ .name = "wglCreateContext", .type = @TypeOf(W32.wglCreateContext) },
         .{ .name = "wglDeleteContext", .type = @TypeOf(W32.wglDeleteContext) },
         .{ .name = "wglMakeCurrent", .type = @TypeOf(W32.wglMakeCurrent) },
+        .{ .name = "wglGetProcAddress", .type = @TypeOf(W32.wglGetProcAddress) },
     }),
     gdi32: ZWL.FunctionLoader("Gdi32", &.{
         .{ .name = "SetPixelFormat", .type = @TypeOf(W32.SetPixelFormat) },
@@ -229,16 +230,40 @@ pub inline fn utf16ToUtf8Z(allocator: Allocator, utf16: []const u16) error{ Inva
 
 pub fn init(lib: *Zwl) Error!void {
     const native = &lib.native;
-    try native.kernel32.init();
+    native.kernel32.init() catch |e| {
+        return lib.setError(
+            "Cannot load library \"Kernel32\": {s}",
+            .{@errorName(e)},
+            error.Win32,
+        );
+    };
     errdefer native.kernel32.deinit();
     const kernel32 = &native.kernel32.funcs;
-    try native.user32.init();
+    native.user32.init() catch |e| {
+        return lib.setError(
+            "Cannot load library \"User32\": {s}",
+            .{@errorName(e)},
+            error.Win32,
+        );
+    };
     errdefer native.user32.deinit();
     const user32 = &native.user32.funcs;
-    try native.opengl32.init();
+    native.opengl32.init() catch |e| {
+        return lib.setError(
+            "Cannot load library \"Opengl32\": {s}",
+            .{@errorName(e)},
+            error.Win32,
+        );
+    };
     errdefer native.opengl32.deinit();
     const opengl32 = &native.opengl32.funcs;
-    try native.gdi32.init();
+    native.gdi32.init() catch |e| {
+        return lib.setError(
+            "Cannot load library \"Gdi32\": {s}",
+            .{@errorName(e)},
+            error.Win32,
+        );
+    };
     errdefer native.gdi32.deinit();
     const gdi32 = &native.gdi32.funcs;
 

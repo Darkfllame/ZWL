@@ -8,10 +8,10 @@ const context = @import("context.zig");
 const Platform = ZWL.Platform;
 
 pub const NativeData = init.NativeData;
-pub const GLContext = context.GLContext;
 pub const Window = window.NativeWindow;
+pub const GLContext = context.GLContext;
 
-pub fn setPlatform(lib: *Platform) void {
+pub fn setPlatform(lib: *Platform) ZWL.Error!void {
     lib.* = .{
         .init = init.init,
         .deinit = init.deinit,

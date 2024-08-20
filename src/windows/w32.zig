@@ -792,6 +792,7 @@ pub extern fn TaskDialogIndirect(
 pub extern fn wglCreateContext(hdc: HDC) callconv(WINAPI) ?HGLRC;
 pub extern fn wglDeleteContext(hglrc: HGLRC) callconv(WINAPI) BOOL;
 pub extern fn wglMakeCurrent(hdc: HDC, hglrc: ?HGLRC) callconv(WINAPI) BOOL;
+pub extern fn wglGetProcAddress(name: [*:0]const u8) callconv(WINAPI) ?*const anyopaque;
 //#endregion
 
 //#region Gdi32

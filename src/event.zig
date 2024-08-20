@@ -8,19 +8,6 @@ const Error = ZWL.Error;
 const Window = ZWL.Window;
 const Zwl = ZWL.Zwl;
 
-const Native = switch (builtin.os.tag) {
-    .windows => @import("windows/event.zig"),
-    .linux => @import("linux/event.zig"),
-    .macos => @import("macos/event.zig"),
-    else => @compileError("Unsupported target"),
-};
-
-comptime {
-    ZWL.checkNativeDecls(Native, &.{
-        .{ .name = "pollEvent", .type = fn (*Zwl, ?*Window) Error!?Event },
-    });
-}
-
 pub const Event = union(enum) {
     quit: u64,
     windowClosed: *Window,
@@ -49,6 +36,6 @@ pub const Event = union(enum) {
     },
 };
 
-pub inline fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
-    return Native.pollEvent(lib, opt_window);
+pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
+    return lib.platform.event.pollEvent(lib, opt_window);
 }

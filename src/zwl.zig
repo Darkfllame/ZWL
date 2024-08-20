@@ -26,8 +26,11 @@ pub const FunctionLoaderError = error{
 
 pub const Error = FunctionLoaderError || error{
     OutOfMemory,
-    Win32,
     InvalidUtf8,
+    Win32,
+    Wayland,
+    X11,
+    Cocoa,
 };
 
 pub const InitConfig = struct {};
@@ -51,11 +54,11 @@ pub const Zwl = struct {
             .platform = undefined,
         };
         comptime {
-            if (@TypeOf(platform.setPlatform) != fn (*Platform) void) {
-                @compileError("Expected platform.setPlatform to be 'fn (*Platform) void'");
+            if (@TypeOf(platform.setPlatform) != fn (*Platform) Error!void) {
+                @compileError("Expected platform.setPlatform to be 'fn (*Platform) Error!void'");
             }
         }
-        platform.setPlatform(&self.platform);
+        try platform.setPlatform(&self.platform);
         try self.platform.init(self);
     }
     pub fn deinit(self: *Zwl) void {
@@ -93,9 +96,9 @@ pub const Zwl = struct {
 
     pub const createWindow = Window.create;
 
-    pub const makeContextCurrent = GLContext.makeCurrent;
-
     pub const pollEvent = event.pollEvent;
+
+    pub const makeContextCurrent = GLContext.makeCurrent;
 };
 
 pub const NativeFunction = struct {

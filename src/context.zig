@@ -12,7 +12,7 @@ pub const GLContext = struct {
     config: Config,
     native: ZWL.platform.GLContext,
 
-    pub const ClientAPI = enum(u2) {
+    pub const VersionAPI = enum(u2) {
         /// Currently unused on:
         /// - Windows
         none,
@@ -23,16 +23,15 @@ pub const GLContext = struct {
         /// - Windows
         opengl_es,
     };
+    pub const Version = struct {
+        api: VersionAPI = .none,
+        major: u8 = 1,
+        minor: u8 = 0,
+    };
     pub const Config = struct {
         /// Currently unused on:
         /// - Windows
-        client: ClientAPI = .none,
-        /// Currently unused on:
-        /// - Windows
-        major: u8 = 1,
-        /// Currently unused on:
-        /// - Windows
-        minor: u8 = 0,
+        version: Version = .{},
         /// Currently unused on:
         /// - Windows
         debug: bool = false,
@@ -59,7 +58,7 @@ pub const GLContext = struct {
         lib.allocator.destroy(self);
     }
 
-    pub inline fn makeCurrent(lib: *Zwl, opt_ctx: ?*GLContext) Error!void {
+    pub fn makeCurrent(lib: *Zwl, opt_ctx: ?*GLContext) Error!void {
         if (opt_ctx) |ctx| {
             if (ctx.owner.owner != lib) {
                 @panic("Bad library passed to GLContext.makeCurrent");
@@ -67,7 +66,7 @@ pub const GLContext = struct {
         }
         return lib.platform.glContext.makeCurrent(lib, opt_ctx);
     }
-    pub inline fn swapBuffers(ctx: *GLContext) Error!void {
+    pub fn swapBuffers(ctx: *GLContext) Error!void {
         return ctx.owner.owner.platform.glContext.swapBuffers(ctx);
     }
 };
