@@ -5,6 +5,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const zgll = b.dependency("zgll", .{}).module("zgll");
+    b.modules.put(b.dupe("zgll"), zgll);
 
     const config = b.addOptions();
     addConfigOption(
