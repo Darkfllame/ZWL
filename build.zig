@@ -40,6 +40,9 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("zwl", zwl);
     exe.root_module.addImport("zgll", zgll);
+    if (optimize != .Debug) {
+        exe.subsystem = .Windows;
+    }
 
     b.installArtifact(exe);
 

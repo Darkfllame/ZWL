@@ -12,8 +12,6 @@ const TRIANGLE_VERTICES = [_]f32{
     0,    0.5,  0, 0, 1,
 };
 
-var gl: GL = undefined;
-
 pub fn main() !void {
     if (@import("builtin").os.tag == .windows) { // manually set console output mode for windows, because zig doesn't
         const W32 = opaque {
@@ -27,9 +25,12 @@ pub fn main() !void {
         _ = W32.SetConsoleOutputCP(W32.CP_UTF8);
     }
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    const DEBUG = @import("builtin").mode == .Debug;
+    var gpa = if (DEBUG)
+        std.heap.GeneralPurposeAllocator(.{}){}
+    else {};
+    defer _ = if (DEBUG) gpa.deinit();
+    const allocator = if (DEBUG) gpa.allocator() else std.heap.page_allocator;
 
     try zwl.init(allocator, .{});
     defer zwl.deinit();
@@ -57,6 +58,8 @@ pub fn main() !void {
     defer ctx.destroy();
     try zwl.makeContextCurrent(ctx);
 
+    const gl = try allocator.create(GL);
+    defer allocator.destroy(gl);
     try gl.init(null);
 
     var VAO: u32 = 0;
