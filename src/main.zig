@@ -67,10 +67,7 @@ pub fn main() !void {
     defer allocator.destroy(gl);
     try gl.init(null);
 
-    {
-        const vers = gl.getString(GL.VERSION).?;
-        std.debug.print("Using {s}\n", .{vers});
-    }
+    std.debug.print("Using OpenGL {s}\n", .{gl.getString(GL.VERSION).?});
 
     var VAO: u32 = 0;
     gl.genVertexArrays(1, @ptrCast(&VAO));

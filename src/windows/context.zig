@@ -26,7 +26,7 @@ pub const PFD = W32.PIXELFORMATDESCRIPTOR{
 };
 
 pub const GLContext = struct {
-    var previousCurrent: ?GLContext = null;
+    threadlocal var previousCurrent: ?GLContext = null;
 
     dc: W32.HDC,
     user32: *const USER32,
