@@ -133,6 +133,7 @@ pub const Platform = struct {
         deinit: *const fn (*platform.GLContext) void,
         makeCurrent: *const fn (*Zwl, ?*GLContext) Error!void,
         swapBuffers: *const fn (*GLContext) Error!void,
+        swapInterval: *const fn (*Zwl, u32) Error!void,
     },
 };
 

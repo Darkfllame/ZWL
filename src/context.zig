@@ -13,30 +13,24 @@ pub const GLContext = struct {
     native: ZWL.platform.GLContext,
 
     pub const VersionAPI = enum(u2) {
-        /// Currently unused on:
-        /// - Windows
-        none,
-        /// Currently unused on:
-        /// - Windows
         opengl,
-        /// Currently unused on:
-        /// - Windows
         opengl_es,
     };
+    pub const OpenGLProfile = enum(u2) {
+        any,
+        core,
+        compat,
+    };
     pub const Version = struct {
-        api: VersionAPI = .none,
+        api: VersionAPI = .opengl,
         major: u8 = 1,
         minor: u8 = 0,
     };
     pub const Config = struct {
-        /// Currently unused on:
-        /// - Windows
         version: Version = .{},
-        /// Currently unused on:
-        /// - Windows
         debug: bool = false,
-        /// Currently unused on:
-        /// - Windows
+        forward: bool = false,
+        profile: OpenGLProfile = .any,
         share: ?*GLContext = null,
     };
 
@@ -68,5 +62,8 @@ pub const GLContext = struct {
     }
     pub fn swapBuffers(ctx: *GLContext) Error!void {
         return ctx.owner.owner.platform.glContext.swapBuffers(ctx);
+    }
+    pub fn swapInterval(lib: *Zwl, interval: u32) Error!void {
+        return lib.platform.glContext.swapInterval(lib, interval);
     }
 };

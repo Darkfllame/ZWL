@@ -39,6 +39,7 @@ pub fn setPlatform(lib: *Platform) ZWL.Error!void {
             .deinit = context.GLContext.deinit,
             .makeCurrent = context.GLContext.makeCurrent,
             .swapBuffers = context.GLContext.swapBuffers,
+            .swapInterval = context.GLContext.swapInterval,
         },
     };
 }

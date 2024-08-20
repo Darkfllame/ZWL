@@ -54,13 +54,23 @@ pub fn main() !void {
         return;
     }
 
-    const ctx = try window.createGLContext(.{});
+    const ctx = try window.createGLContext(.{
+        .version = .{
+            .major = 3,
+            .minor = 2,
+        },
+    });
     defer ctx.destroy();
     try zwl.makeContextCurrent(ctx);
 
     const gl = try allocator.create(GL);
     defer allocator.destroy(gl);
     try gl.init(null);
+
+    {
+        const vers = gl.getString(GL.VERSION).?;
+        std.debug.print("Using {s}\n", .{vers});
+    }
 
     var VAO: u32 = 0;
     gl.genVertexArrays(1, @ptrCast(&VAO));

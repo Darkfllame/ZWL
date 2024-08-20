@@ -47,8 +47,5 @@ Feel free to contribute to the library by making PRs or by filing issues. My mac
 ## Contributor Note
 - Constants are **CAPITAL_SNAKE_CASE**
 - Files should starts with imports, type aliases, constants, main type(s) or function(s), internal/local functions
-- Enums values or struct fields which are unused on a certain platform should be marked as unused in the documentation. Optionally add a todo along it.
 - If you need to add an option to the build config, make so that the build argument is unconditional and in **CAPITAL_SNAKE_CASE**.
 - Avoid blocking operations.
-- If you need to change something in the user API, make sure it makes sense with the rest of the API.
-- Make sure that your platform can be cross-compiled (avoid static linking)

@@ -555,6 +555,19 @@ pub const DEVICE_NOTIFY_WINDOW_HANDLE: DWORD = 0x00000000;
 pub const DEVICE_NOTIFY_SERVICE_HANDLE: DWORD = 0x00000001;
 pub const DEVICE_NOTIFY_ALL_INTERFACE_CLASSES: DWORD = 0x00000004;
 
+pub const WGL_CONTEXT_MAJOR_VERSION_ARB: i32 = 0x2091;
+pub const WGL_CONTEXT_MINOR_VERSION_ARB: i32 = 0x2092;
+pub const WGL_CONTEXT_LAYER_PLANE_ARB: i32 = 0x2093;
+pub const WGL_CONTEXT_FLAGS_ARB: i32 = 0x2094;
+pub const WGL_CONTEXT_PROFILE_MASK_ARB: i32 = 0x9126;
+pub const WGL_CONTEXT_DEBUG_BIT_ARB: u32 = 0x0001;
+pub const WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB: u32 = 0x0002;
+pub const WGL_CONTEXT_CORE_PROFILE_BIT_ARB: u32 = 0x00000001;
+pub const WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB: u32 = 0x00000002;
+pub const ERROR_INVALID_VERSION_ARB: DWORD = 0x2095;
+pub const ERROR_INVALID_PROFILE_ARB: DWORD = 0x2096;
+pub const ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB: DWORD = 0x2054;
+
 pub const WNDCLASSEXW = extern struct {
     cbSize: UINT = @sizeOf(WNDCLASSEXW),
     style: UINT,
@@ -793,6 +806,7 @@ pub extern fn wglCreateContext(hdc: HDC) callconv(WINAPI) ?HGLRC;
 pub extern fn wglDeleteContext(hglrc: HGLRC) callconv(WINAPI) BOOL;
 pub extern fn wglMakeCurrent(hdc: HDC, hglrc: ?HGLRC) callconv(WINAPI) BOOL;
 pub extern fn wglGetProcAddress(name: [*:0]const u8) callconv(WINAPI) ?*const anyopaque;
+pub extern fn wglShareLists(hglrc1: HGLRC, hglrc2: HGLRC) callconv(WINAPI) BOOL;
 //#endregion
 
 //#region Gdi32

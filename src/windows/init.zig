@@ -189,6 +189,7 @@ pub const NativeData = struct {
         .{ .name = "wglDeleteContext", .type = @TypeOf(W32.wglDeleteContext) },
         .{ .name = "wglMakeCurrent", .type = @TypeOf(W32.wglMakeCurrent) },
         .{ .name = "wglGetProcAddress", .type = @TypeOf(W32.wglGetProcAddress) },
+        .{ .name = "wglShareLists", .type = @TypeOf(W32.wglShareLists) },
     }),
     gdi32: ZWL.FunctionLoader("Gdi32", &.{
         .{ .name = "SetPixelFormat", .type = @TypeOf(W32.SetPixelFormat) },
@@ -202,6 +203,8 @@ pub const NativeData = struct {
         dc: W32.HDC,
         glrc: W32.HGLRC,
     },
+    wglCreateContextAttribsARB: ?*const fn (hDC: W32.HDC, hShareContext: ?W32.HGLRC, attribList: [*]const i32) callconv(W32.WINAPI) ?W32.HGLRC,
+    wglSwapIntervalEXT: ?*const fn (interval: i32) callconv(W32.WINAPI) W32.BOOL,
 };
 
 pub inline fn utf8ToUtf16(allocator: Allocator, utf8: []const u8) error{ InvalidUtf8, OutOfMemory }![]const u16 {
@@ -301,15 +304,6 @@ pub fn init(lib: *Zwl) Error!void {
     helperWindow.handle = hWindow;
 
     { // create helper window opengl context
-        // const GUID_DEVINTERFACE_HID = W32.GUID{
-        //     .Data1 = 0x4d1e55b2,
-        //     .Data2 = 0xf16f,
-        //     .Data3 = 0x11cf,
-        //     .Data4 = .{
-        //         0x88, 0xcb, 0x00, 0x11,
-        //         0x11, 0x00, 0x00, 0x30,
-        //     },
-        // };
         const dc = user32.GetDC(hWindow) orelse {
             return lib.setError("Cannot get device context from helper window", .{}, Error.Win32);
         };
@@ -324,6 +318,13 @@ pub fn init(lib: *Zwl) Error!void {
         };
         errdefer _ = opengl32.wglDeleteContext(glrc);
         helperWindow.glrc = glrc;
+
+        _ = opengl32.wglMakeCurrent(dc, glrc);
+
+        native.wglCreateContextAttribsARB = @ptrCast(opengl32.wglGetProcAddress("wglCreateContextAttribsARB"));
+        native.wglSwapIntervalEXT = @ptrCast(opengl32.wglGetProcAddress("wglSwapIntervalEXT"));
+
+        _ = opengl32.wglMakeCurrent(dc, null);
     }
 }
 
