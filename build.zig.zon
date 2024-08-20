@@ -2,7 +2,12 @@
     .name = "zwl",
     .version = "0.1.0",
 
-    .dependencies = .{},
+    .dependencies = .{
+        .zgll = .{
+            .url = "https://github.com/Darkfllame/zgll/archive/847c4589b498e5addaf0da1ede1c096244883ea8.tar.gz",
+            .hash = "1220d812efec469c2b6e4f443c65e69f360212df2b7e314097af87a1f06d435bc425",
+        },
+    },
 
     .paths = .{
         "src/",

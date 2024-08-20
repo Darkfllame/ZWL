@@ -4,6 +4,8 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const zgll = b.dependency("zgll", .{}).module("zgll");
+
     const config = b.addOptions();
     addConfigOption(
         b,
@@ -32,9 +34,11 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
         .strip = if (optimize == .ReleaseFast) true else null,
     });
     exe.root_module.addImport("zwl", zwl);
+    exe.root_module.addImport("zgll", zgll);
 
     b.installArtifact(exe);
 
@@ -42,7 +46,8 @@ pub fn build(b: *std.Build) void {
     run_cmd.step.dependOn(b.getInstallStep());
     run_cmd.addArgs(b.args orelse &.{});
 
-    const run_step = b.step("run", "Run the app");
+    const run_step = b.step("run", "Run a simple demo, showing a colored triangle " ++
+        "to a window with OpenGL");
     run_step.dependOn(&run_cmd.step);
 }
 
