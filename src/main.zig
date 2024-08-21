@@ -66,6 +66,7 @@ pub fn main() !void {
     const gl = try allocator.create(GL);
     defer allocator.destroy(gl);
     try gl.init(null);
+    if (true) @panic("Testing shit");
 
     std.debug.print("Using OpenGL {s}\n", .{gl.getString(GL.VERSION).?});
 
@@ -137,3 +138,5 @@ pub fn main() !void {
         try ctx.swapBuffers();
     }
 }
+
+pub const panic = ZWL.MBpanic;

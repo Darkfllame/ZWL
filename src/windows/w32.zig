@@ -790,6 +790,7 @@ pub extern fn ShowCursor(bShow: BOOL) callconv(WINAPI) i32;
 pub extern fn GetKeyState(nVirtKey: i32) callconv(WINAPI) SHORT;
 pub extern fn MapVirtualKeyW(uCode: UINT, uMapType: UINT) callconv(WINAPI) UINT;
 pub extern fn GetMessageTime() callconv(WINAPI) LONG;
+pub extern fn MessageBoxW(hWnd: ?HWND, lpText: ?LPCWSTR, lpCaption: ?LPCWSTR, uType: UINT) callconv(WINAPI) i32;
 //#endregion
 
 //#region Comctl32

@@ -95,6 +95,7 @@ pub const Zwl = struct {
     }
 
     pub const createWindow = Window.create;
+    pub const createMessageBox = Window.createMessageBox;
 
     pub const pollEvent = event.pollEvent;
 
@@ -124,6 +125,7 @@ pub const Platform = struct {
         getMousePos: *const fn (*Window, ?*u32, ?*u32) void,
         setMousePos: *const fn (*Window, u32, u32) void,
         setMouseVisible: *const fn (*Window, bool) void,
+        createMessageBox: *const fn (*Zwl, Window.MBConfig) Error!Window.MBButton,
     },
     event: struct {
         pollEvent: *const fn (*Zwl, ?*Window) Error!?Event,
@@ -188,6 +190,54 @@ pub fn checkNativeDecls(comptime T: type, comptime decls: []const NativeFunction
                 rDecl.name ++ "\" field of type: " ++ @typeName(rDecl.type));
         }
     }
+}
+
+pub fn MBpanic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    var text: [4096]u8 = undefined;
+    var len: usize = 0;
+    var fbs = std.io.fixedBufferStream(&text);
+    const first_ret_addr = ret_addr orelse @returnAddress();
+    if (std.debug.getSelfDebugInfo()) |dbi| {
+        std.debug.writeCurrentStackTrace(
+            fbs.writer(),
+            dbi,
+            .no_color,
+            first_ret_addr,
+        ) catch {};
+    } else |_| {}
+    if (error_return_trace) |ert| {
+        ert.format("", .{}, fbs.writer()) catch {};
+    }
+    len = fbs.pos;
+    if (len == 0) {
+        const noErrMessage = "No Error message";
+        len = noErrMessage.len;
+        @memcpy(text[0..noErrMessage.len], noErrMessage);
+    }
+    const mbText = text[0..len];
+
+    var title: [4096]u8 = undefined;
+    fbs = std.io.fixedBufferStream(&title);
+    len = 0;
+    if (@import("builtin").single_threaded) {
+        fbs.writer().print("panic: {s}", .{msg}) catch {};
+    } else {
+        fbs.writer().print("thread {d} panic: {s}", .{ std.Thread.getCurrentId(), msg }) catch {};
+    }
+    len = fbs.pos;
+
+    var zwl: Zwl = undefined;
+    zwl.init(std.heap.page_allocator, .{}) catch
+        std.builtin.default_panic(msg, @errorReturnTrace(), null);
+
+    const ret = zwl.createMessageBox(.{
+        .title = title[0..len],
+        .text = mbText,
+        .icon = .@"error",
+    });
+    zwl.deinit();
+    if (ret) |_| {} else |_| {}
+    std.builtin.default_panic(msg, error_return_trace, first_ret_addr);
 }
 
 fn GetFunctionType(comptime T: type) type {

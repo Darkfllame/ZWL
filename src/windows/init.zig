@@ -13,6 +13,8 @@ const Error = ZWL.Error;
 const Key = ZWL.Key;
 const Zwl = ZWL.Zwl;
 
+var initCount: u32 = 0;
+
 pub const WND_CLASS_NAME = utf8ToUtf16Z(undefined, "ZWL_WND") catch unreachable;
 
 pub const KEYCODES: [512]Key = blk: {
@@ -183,6 +185,7 @@ pub const NativeData = struct {
         .{ .name = "GetKeyState", .type = @TypeOf(W32.GetKeyState) },
         .{ .name = "MapVirtualKeyW", .type = @TypeOf(W32.MapVirtualKeyW) },
         .{ .name = "GetMessageTime", .type = @TypeOf(W32.GetMessageTime) },
+        .{ .name = "MessageBoxW", .type = @TypeOf(W32.MessageBoxW) },
     }),
     opengl32: ZWL.FunctionLoader("Opengl32", &.{
         .{ .name = "wglCreateContext", .type = @TypeOf(W32.wglCreateContext) },
@@ -273,13 +276,14 @@ pub fn init(lib: *Zwl) Error!void {
     const hInstance: W32.HINSTANCE = @ptrCast(kernel32.GetModuleHandleW(null));
     native.hInstance = hInstance;
 
-    if (user32.RegisterClassExW(&.{
+    if (initCount == 0 and user32.RegisterClassExW(&.{
         .style = W32.CS_HREDRAW | W32.CS_VREDRAW | W32.CS_OWNDC,
         .lpfnWndProc = &window.windowProc,
         .hInstance = hInstance,
         .hCursor = user32.LoadCursorW(null, W32.IDC_ARROW),
         .lpszClassName = WND_CLASS_NAME.ptr,
     }) == 0) return lib.setError("Cannot register window class", .{}, Error.Win32);
+    initCount += 1;
 
     const helperWindow = &native.helperWindow;
     event.pollingLib = lib;
@@ -329,9 +333,12 @@ pub fn init(lib: *Zwl) Error!void {
 }
 
 pub fn deinit(lib: *Zwl) void {
+    initCount -= 1;
     _ = lib.native.opengl32.funcs.wglDeleteContext(lib.native.helperWindow.glrc);
     _ = lib.native.user32.funcs.DestroyWindow(lib.native.helperWindow.handle);
-    _ = lib.native.user32.funcs.UnregisterClassW(WND_CLASS_NAME.ptr, lib.native.hInstance);
+    if (initCount == 0) {
+        _ = lib.native.user32.funcs.UnregisterClassW(WND_CLASS_NAME.ptr, lib.native.hInstance);
+    }
     lib.native.kernel32.deinit();
     lib.native.user32.deinit();
     lib.native.opengl32.deinit();

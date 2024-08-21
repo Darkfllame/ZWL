@@ -53,23 +53,65 @@ pub const Window = struct {
         flags: Flags = .{},
     };
 
-    pub fn create(owner: *Zwl, wConfig: Config) Error!*Window {
+    pub const MBMode = enum {
+        ok,
+        okCancel,
+        abortRetryIgnore,
+        yesNoCancel,
+        yesNo,
+        retryCancel,
+        cancelTryContinue,
+    };
+
+    pub const MBButton = enum {
+        ok,
+        cancel,
+        abort,
+        retry,
+        ignore,
+        yes,
+        no,
+        tryAgain,
+        @"continue",
+    };
+
+    pub const MBIcon = enum {
+        none,
+        @"error",
+        question,
+        warning,
+        information,
+    };
+
+    pub const MBConfig = struct {
+        title: []const u8,
+        text: []const u8,
+        parent: ?*Window = null,
+        mode: MBMode = .ok,
+        icon: MBIcon = .none,
+    };
+
+    pub fn create(owner: *Zwl, _config: Config) Error!*Window {
         const self = owner.allocator.create(Window) catch |e| {
             return owner.setError("Cannot allocate window", .{}, e);
         };
         errdefer owner.allocator.destroy(self);
 
-        std.debug.assert((wConfig.sizeLimits.wmin orelse 0) <
-            (wConfig.sizeLimits.wmax orelse std.math.maxInt(u32)));
-        std.debug.assert((wConfig.sizeLimits.hmin orelse 0) <
-            (wConfig.sizeLimits.hmax orelse std.math.maxInt(u32)));
+        std.debug.assert((_config.sizeLimits.wmin orelse 0) <
+            (_config.sizeLimits.wmax orelse std.math.maxInt(u32)));
+        std.debug.assert((_config.sizeLimits.hmin orelse 0) <
+            (_config.sizeLimits.hmax orelse std.math.maxInt(u32)));
 
         self.owner = owner;
-        self.config = wConfig;
-        try owner.platform.window.init(&self.native, owner, wConfig);
+        self.config = _config;
+        try owner.platform.window.init(&self.native, owner, _config);
         errdefer owner.platform.window.deinit(&self.native);
 
         return self;
+    }
+
+    pub fn createMessageBox(owner: *Zwl, _config: MBConfig) Error!MBButton {
+        return owner.platform.window.createMessageBox(owner, _config);
     }
 
     pub fn destroy(self: *Window) void {

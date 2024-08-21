@@ -102,6 +102,55 @@ pub const NativeWindow = struct {
         _ = self.user32.DestroyWindow(self.handle);
     }
 
+    pub fn createMessageBox(lib: *Zwl, config: Window.MBConfig) Error!Window.MBButton {
+        const wideTitle = internal.utf8ToUtf16Z(lib.allocator, config.title) catch |e| {
+            return lib.setError("Cannot create wide title for Win32", .{}, e);
+        };
+        defer lib.allocator.free(wideTitle);
+        const wideText = internal.utf8ToUtf16Z(lib.allocator, config.text) catch |e| {
+            return lib.setError("Cannot create wide text for Win32", .{}, e);
+        };
+        defer lib.allocator.free(wideText);
+
+        var uType: W32.UINT = 0;
+        uType |= switch (config.mode) {
+            .ok => 0,
+            .okCancel => 1,
+            .abortRetryIgnore => 2,
+            .yesNoCancel => 3,
+            .yesNo => 4,
+            .retryCancel => 5,
+            .cancelTryContinue => 6,
+        };
+        uType |= switch (config.icon) {
+            .none => 0,
+            .@"error" => 0x10,
+            .question => 0x20,
+            .warning => 0x30,
+            .information => 0x40,
+        };
+
+        const ret = lib.native.user32.funcs.MessageBoxW(
+            if (config.parent) |p| p.native.handle else null,
+            wideText.ptr,
+            wideTitle.ptr,
+            uType,
+        );
+        return switch (ret) {
+            0 => lib.setError("Cannot create message box", .{}, Error.Win32),
+            1 => .ok,
+            2 => .cancel,
+            3 => .abort,
+            4 => .retry,
+            5 => .ignore,
+            6 => .yes,
+            7 => .no,
+            11 => .@"continue",
+            10 => .tryAgain,
+            else => unreachable,
+        };
+    }
+
     pub fn getPosition(window: *Window, x: ?*u32, y: ?*u32) void {
         var pt: W32.POINT = .{};
         _ = window.native.user32.ClientToScreen(window.native.handle, &pt);
