@@ -193,10 +193,13 @@ pub fn checkNativeDecls(comptime T: type, comptime decls: []const NativeFunction
 }
 
 pub fn MBpanic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    @setCold(true);
+
     var text: [4096]u8 = undefined;
     var len: usize = 0;
     var fbs = std.io.fixedBufferStream(&text);
     const first_ret_addr = ret_addr orelse @returnAddress();
+    fbs.writer().print("{s}\n", .{msg}) catch {};
     if (std.debug.getSelfDebugInfo()) |dbi| {
         std.debug.writeCurrentStackTrace(
             fbs.writer(),
@@ -209,20 +212,15 @@ pub fn MBpanic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, re
         ert.format("", .{}, fbs.writer()) catch {};
     }
     len = fbs.pos;
-    if (len == 0) {
-        const noErrMessage = "No Error message";
-        len = noErrMessage.len;
-        @memcpy(text[0..noErrMessage.len], noErrMessage);
-    }
     const mbText = text[0..len];
 
     var title: [4096]u8 = undefined;
     fbs = std.io.fixedBufferStream(&title);
     len = 0;
     if (@import("builtin").single_threaded) {
-        fbs.writer().print("panic: {s}", .{msg}) catch {};
+        fbs.writer().print("panic", .{}) catch {};
     } else {
-        fbs.writer().print("thread {d} panic: {s}", .{ std.Thread.getCurrentId(), msg }) catch {};
+        fbs.writer().print("thread {d} panic", .{std.Thread.getCurrentId()}) catch {};
     }
     len = fbs.pos;
 
