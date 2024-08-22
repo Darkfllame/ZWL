@@ -339,7 +339,7 @@ pub const NativeWindow = struct {
     }
 
     pub fn getKey(window: *Window, key: ZWL.Key) ZWL.Key.Action {
-        return window.native.keys[@intFromEnum(key)] == .press;
+        return window.native.keys[@intFromEnum(key)];
     }
 };
 
