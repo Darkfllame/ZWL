@@ -5,6 +5,7 @@ const ZWL = @import("zwl.zig");
 
 const Allocator = std.mem.Allocator;
 
+const Key = ZWL.Key;
 const Error = ZWL.Error;
 const GLContext = ZWL.GLContext;
 const Zwl = ZWL.Zwl;
@@ -161,5 +162,8 @@ pub const Window = struct {
     }
     pub fn setMouseVisible(self: *Window, value: bool) void {
         return self.owner.platform.window.setMouseVisible(self, value);
+    }
+    pub fn getKey(self: *Window, key: Key) Key.Action {
+        return self.owner.platform.window.getKey(self, key);
     }
 };

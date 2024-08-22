@@ -111,6 +111,7 @@ pub const Platform = struct {
     init: *const fn (*Zwl) Error!void,
     deinit: *const fn (*Zwl) void,
     window: struct {
+        createMessageBox: *const fn (*Zwl, Window.MBConfig) Error!Window.MBButton,
         init: *const fn (*platform.Window, *Zwl, Window.Config) Error!void,
         deinit: *const fn (*platform.Window) void,
         setPosition: *const fn (*Window, u32, u32) void,
@@ -125,7 +126,7 @@ pub const Platform = struct {
         getMousePos: *const fn (*Window, ?*u32, ?*u32) void,
         setMousePos: *const fn (*Window, u32, u32) void,
         setMouseVisible: *const fn (*Window, bool) void,
-        createMessageBox: *const fn (*Zwl, Window.MBConfig) Error!Window.MBButton,
+        getKey: *const fn (*Window, Key) Key.Action,
     },
     event: struct {
         pollEvent: *const fn (*Zwl, ?*Window) Error!?Event,

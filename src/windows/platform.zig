@@ -16,6 +16,7 @@ pub fn setPlatform(lib: *Platform) ZWL.Error!void {
         .init = init.init,
         .deinit = init.deinit,
         .window = .{
+            .createMessageBox = window.NativeWindow.createMessageBox,
             .init = window.NativeWindow.init,
             .deinit = window.NativeWindow.deinit,
             .setPosition = window.NativeWindow.setPosition,
@@ -30,7 +31,7 @@ pub fn setPlatform(lib: *Platform) ZWL.Error!void {
             .getMousePos = window.NativeWindow.getMousePos,
             .setMousePos = window.NativeWindow.setMousePos,
             .setMouseVisible = window.NativeWindow.setMouseVisible,
-            .createMessageBox = window.NativeWindow.createMessageBox,
+            .getKey = window.NativeWindow.getKey,
         },
         .event = .{
             .pollEvent = event.pollEvent,

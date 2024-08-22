@@ -337,6 +337,10 @@ pub const NativeWindow = struct {
     pub fn setMouseVisible(window: *Window, value: bool) void {
         _ = window.native.user32.ShowCursor(@intFromBool(value));
     }
+
+    pub fn getKey(window: *Window, key: ZWL.Key) ZWL.Key.Action {
+        return window.native.keys[@intFromEnum(key)] == .press;
+    }
 };
 
 pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM) callconv(W32.CALLBACK) W32.LRESULT {
@@ -478,10 +482,10 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
 
             window.native.keys[@intFromEnum(key)] = action;
 
+            if (repeated)
+                action = .repeat;
             //                               VK_SHIFT
             if (action == .release and wp == 0x10) {
-                if (repeated)
-                    action = .repeat;
                 event.polledEvent = Event{ .key = .{
                     .window = window,
                     .key = .left_shift,
@@ -496,8 +500,6 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
                 } };
                 //           VK_SNAPSHOT
             } else if (wp == 0x2C) {
-                if (repeated)
-                    action = .repeat;
                 event.polledEvent = Event{ .key = .{
                     .window = window,
                     .key = key,
@@ -511,8 +513,6 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
                     .mods = mods,
                 } };
             } else {
-                if (repeated)
-                    action = .repeat;
                 event.polledEvent = Event{ .key = .{
                     .window = window,
                     .key = key,
