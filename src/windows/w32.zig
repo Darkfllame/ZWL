@@ -724,12 +724,12 @@ pub inline fn FAILED(hr: HRESULT) bool {
 }
 
 //#region Kernel32
-pub extern fn GetModuleHandleW(lpModuleName: ?LPCWSTR) callconv(WINAPI) HMODULE;
-pub extern fn GetLastError() callconv(WINAPI) DWORD;
+pub extern "Kernel32" fn GetModuleHandleW(lpModuleName: ?LPCWSTR) callconv(WINAPI) HMODULE;
+pub extern "Kernel32" fn GetLastError() callconv(WINAPI) DWORD;
 //#endregion
 
 //#region User32
-pub extern fn CreateWindowExW(
+pub extern "User32" fn CreateWindowExW(
     dwExtStyle: DWORD,
     lpClassName: ?LPCWSTR,
     lpWindowName: ?LPCWSTR,
@@ -743,27 +743,27 @@ pub extern fn CreateWindowExW(
     hInstance: ?HINSTANCE,
     lpParam: ?LPVOID,
 ) callconv(WINAPI) ?HWND;
-pub extern fn DestroyWindow(hWnd: HWND) callconv(WINAPI) BOOL;
-pub extern fn DefWindowProcW(hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM) callconv(WINAPI) LRESULT;
-pub extern fn RegisterClassExW(class: *const WNDCLASSEXW) callconv(WINAPI) ATOM;
-pub extern fn UnregisterClassW(lpClassName: LPCWSTR, hInstance: ?HINSTANCE) callconv(WINAPI) BOOL;
-pub extern fn LoadCursorW(hInstance: ?HINSTANCE, lpCursorName: LPCWSTR) callconv(WINAPI) ?HCURSOR;
-pub extern fn GetPropW(hWnd: HWND, lpString: LPCWSTR) callconv(WINAPI) ?HANDLE;
-pub extern fn SetPropW(hWnd: HWND, lpString: LPCWSTR, hData: HANDLE) callconv(WINAPI) BOOL;
-pub extern fn GetActiveWindow() callconv(WINAPI) ?HWND;
-pub extern fn PeekMessageW(
+pub extern "User32" fn DestroyWindow(hWnd: HWND) callconv(WINAPI) BOOL;
+pub extern "User32" fn DefWindowProcW(hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM) callconv(WINAPI) LRESULT;
+pub extern "User32" fn RegisterClassExW(class: *const WNDCLASSEXW) callconv(WINAPI) ATOM;
+pub extern "User32" fn UnregisterClassW(lpClassName: LPCWSTR, hInstance: ?HINSTANCE) callconv(WINAPI) BOOL;
+pub extern "User32" fn LoadCursorW(hInstance: ?HINSTANCE, lpCursorName: LPCWSTR) callconv(WINAPI) ?HCURSOR;
+pub extern "User32" fn GetPropW(hWnd: HWND, lpString: LPCWSTR) callconv(WINAPI) ?HANDLE;
+pub extern "User32" fn SetPropW(hWnd: HWND, lpString: LPCWSTR, hData: HANDLE) callconv(WINAPI) BOOL;
+pub extern "User32" fn GetActiveWindow() callconv(WINAPI) ?HWND;
+pub extern "User32" fn PeekMessageW(
     lpMsg: *MSG,
     hWnd: ?HWND,
     wMsgFilterMin: UINT,
     wMsgFilterMax: UINT,
     wRemoveMsg: UINT,
 ) callconv(WINAPI) BOOL;
-pub extern fn TranslateMessage(lpMsg: *const MSG) callconv(WINAPI) BOOL;
-pub extern fn DispatchMessageW(lpMsg: *const MSG) callconv(WINAPI) LRESULT;
-pub extern fn ClientToScreen(hWnd: HWND, lpPoint: *POINT) callconv(WINAPI) BOOL;
-pub extern fn AdjustWindowRectEx(lpRect: *RECT, dwStyle: DWORD, bMenu: BOOL, dwExStyle: DWORD) BOOL;
-pub extern fn GetClientRect(hWnd: HWND, lprect: *RECT) callconv(WINAPI) BOOL;
-pub extern fn SetWindowPos(
+pub extern "User32" fn TranslateMessage(lpMsg: *const MSG) callconv(WINAPI) BOOL;
+pub extern "User32" fn DispatchMessageW(lpMsg: *const MSG) callconv(WINAPI) LRESULT;
+pub extern "User32" fn ClientToScreen(hWnd: HWND, lpPoint: *POINT) callconv(WINAPI) BOOL;
+pub extern "User32" fn AdjustWindowRectEx(lpRect: *RECT, dwStyle: DWORD, bMenu: BOOL, dwExStyle: DWORD) BOOL;
+pub extern "User32" fn GetClientRect(hWnd: HWND, lprect: *RECT) callconv(WINAPI) BOOL;
+pub extern "User32" fn SetWindowPos(
     hWnd: HWND,
     hWndInsertAfter: ?HWND,
     X: i32,
@@ -772,29 +772,29 @@ pub extern fn SetWindowPos(
     cy: i32,
     uFlags: UINT,
 ) callconv(WINAPI) BOOL;
-pub extern fn GetDC(hWnd: HWND) callconv(WINAPI) ?HDC;
-pub extern fn ShowWindow(hWnd: HWND, nCmdShow: i32) callconv(WINAPI) BOOL;
-pub extern fn SetWindowTextW(hWnd: HWND, lpString: ?LPCWSTR) callconv(WINAPI) BOOL;
-pub extern fn GetWindowTextLengthW(hWnd: HWND) callconv(WINAPI) i32;
-pub extern fn GetWindowTextW(hWnd: HWND, lpString: LPWSTR, nMaxCount: i32) callconv(WINAPI) i32;
-pub extern fn GetWindowRect(hWnd: HWND, lpRect: *RECT) callconv(WINAPI) BOOL;
-pub extern fn MoveWindow(hWnd: HWND, x: i32, y: i32, nWidth: i32, nHeight: i32, bRepaint: BOOL) callconv(WINAPI) BOOL;
-pub extern fn GetCursorPos(lpPoint: *POINT) callconv(WINAPI) BOOL;
-pub extern fn SetCursorPos(x: i32, y: i32) callconv(WINAPI) BOOL;
-pub extern fn ScreenToClient(hWnd: HWND, lpPoint: *POINT) callconv(WINAPI) BOOL;
-pub extern fn SetCursor(hCurser: ?HCURSOR) callconv(WINAPI) HCURSOR;
-pub extern fn ClipCursor(lpRect: ?*const RECT) callconv(WINAPI) BOOL;
-pub extern fn WindowFromPoint(Point: POINT) callconv(WINAPI) ?HWND;
-pub extern fn PtInRect(lprc: *const RECT, Point: POINT) callconv(WINAPI) BOOL;
-pub extern fn ShowCursor(bShow: BOOL) callconv(WINAPI) i32;
-pub extern fn GetKeyState(nVirtKey: i32) callconv(WINAPI) SHORT;
-pub extern fn MapVirtualKeyW(uCode: UINT, uMapType: UINT) callconv(WINAPI) UINT;
-pub extern fn GetMessageTime() callconv(WINAPI) LONG;
-pub extern fn MessageBoxW(hWnd: ?HWND, lpText: ?LPCWSTR, lpCaption: ?LPCWSTR, uType: UINT) callconv(WINAPI) i32;
+pub extern "User32" fn GetDC(hWnd: HWND) callconv(WINAPI) ?HDC;
+pub extern "User32" fn ShowWindow(hWnd: HWND, nCmdShow: i32) callconv(WINAPI) BOOL;
+pub extern "User32" fn SetWindowTextW(hWnd: HWND, lpString: ?LPCWSTR) callconv(WINAPI) BOOL;
+pub extern "User32" fn GetWindowTextLengthW(hWnd: HWND) callconv(WINAPI) i32;
+pub extern "User32" fn GetWindowTextW(hWnd: HWND, lpString: LPWSTR, nMaxCount: i32) callconv(WINAPI) i32;
+pub extern "User32" fn GetWindowRect(hWnd: HWND, lpRect: *RECT) callconv(WINAPI) BOOL;
+pub extern "User32" fn MoveWindow(hWnd: HWND, x: i32, y: i32, nWidth: i32, nHeight: i32, bRepaint: BOOL) callconv(WINAPI) BOOL;
+pub extern "User32" fn GetCursorPos(lpPoint: *POINT) callconv(WINAPI) BOOL;
+pub extern "User32" fn SetCursorPos(x: i32, y: i32) callconv(WINAPI) BOOL;
+pub extern "User32" fn ScreenToClient(hWnd: HWND, lpPoint: *POINT) callconv(WINAPI) BOOL;
+pub extern "User32" fn SetCursor(hCurser: ?HCURSOR) callconv(WINAPI) HCURSOR;
+pub extern "User32" fn ClipCursor(lpRect: ?*const RECT) callconv(WINAPI) BOOL;
+pub extern "User32" fn WindowFromPoint(Point: POINT) callconv(WINAPI) ?HWND;
+pub extern "User32" fn PtInRect(lprc: *const RECT, Point: POINT) callconv(WINAPI) BOOL;
+pub extern "User32" fn ShowCursor(bShow: BOOL) callconv(WINAPI) i32;
+pub extern "User32" fn GetKeyState(nVirtKey: i32) callconv(WINAPI) SHORT;
+pub extern "User32" fn MapVirtualKeyW(uCode: UINT, uMapType: UINT) callconv(WINAPI) UINT;
+pub extern "User32" fn GetMessageTime() callconv(WINAPI) LONG;
+pub extern "User32" fn MessageBoxW(hWnd: ?HWND, lpText: ?LPCWSTR, lpCaption: ?LPCWSTR, uType: UINT) callconv(WINAPI) i32;
 //#endregion
 
 //#region Comctl32
-pub extern fn TaskDialogIndirect(
+pub extern "Comctl32" fn TaskDialogIndirect(
     pTaskConfig: *const TASKDIALOGCONFIG,
     pnButton: ?*i32,
     pnRadioButton: ?*i32,
@@ -803,15 +803,15 @@ pub extern fn TaskDialogIndirect(
 //#endregion
 
 //#region Opengl32
-pub extern fn wglCreateContext(hdc: HDC) callconv(WINAPI) ?HGLRC;
-pub extern fn wglDeleteContext(hglrc: HGLRC) callconv(WINAPI) BOOL;
-pub extern fn wglMakeCurrent(hdc: HDC, hglrc: ?HGLRC) callconv(WINAPI) BOOL;
-pub extern fn wglGetProcAddress(name: [*:0]const u8) callconv(WINAPI) ?*const anyopaque;
-pub extern fn wglShareLists(hglrc1: HGLRC, hglrc2: HGLRC) callconv(WINAPI) BOOL;
+pub extern "Opengl32" fn wglCreateContext(hdc: HDC) callconv(WINAPI) ?HGLRC;
+pub extern "Opengl32" fn wglDeleteContext(hglrc: HGLRC) callconv(WINAPI) BOOL;
+pub extern "Opengl32" fn wglMakeCurrent(hdc: HDC, hglrc: ?HGLRC) callconv(WINAPI) BOOL;
+pub extern "Opengl32" fn wglGetProcAddress(name: [*:0]const u8) callconv(WINAPI) ?*const anyopaque;
+pub extern "Opengl32" fn wglShareLists(hglrc1: HGLRC, hglrc2: HGLRC) callconv(WINAPI) BOOL;
 //#endregion
 
 //#region Gdi32
-pub extern fn SetPixelFormat(hdc: HDC, format: i32, ppfd: *const PIXELFORMATDESCRIPTOR) callconv(WINAPI) BOOL;
-pub extern fn ChoosePixelFormat(hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR) callconv(WINAPI) i32;
-pub extern fn SwapBuffers(hdc: HDC) callconv(WINAPI) BOOL;
+pub extern "Gdi32" fn SetPixelFormat(hdc: HDC, format: i32, ppfd: *const PIXELFORMATDESCRIPTOR) callconv(WINAPI) BOOL;
+pub extern "Gdi32" fn ChoosePixelFormat(hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR) callconv(WINAPI) i32;
+pub extern "Gdi32" fn SwapBuffers(hdc: HDC) callconv(WINAPI) BOOL;
 //#endregion

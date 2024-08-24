@@ -23,12 +23,12 @@ pub const GLContext = struct {
     };
     pub const Version = struct {
         api: VersionAPI = .opengl,
-        major: u8 = 1,
+        major: u8 = 0,
         minor: u8 = 0,
     };
     pub const Config = struct {
         version: Version = .{},
-        debug: bool = false,
+        debug: bool = builtin.mode == .Debug,
         forward: bool = false,
         profile: OpenGLProfile = .any,
         share: ?*GLContext = null,

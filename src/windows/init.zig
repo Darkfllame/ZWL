@@ -146,59 +146,6 @@ pub const KEYCODES: [512]Key = blk: {
 };
 
 pub const NativeData = struct {
-    kernel32: ZWL.FunctionLoader("Kernel32", &.{
-        .{ .name = "GetModuleHandleW", .type = @TypeOf(W32.GetModuleHandleW) },
-        .{ .name = "GetLastError", .type = @TypeOf(W32.GetLastError) },
-    }),
-    user32: ZWL.FunctionLoader("User32", &.{
-        .{ .name = "CreateWindowExW", .type = @TypeOf(W32.CreateWindowExW) },
-        .{ .name = "DestroyWindow", .type = @TypeOf(W32.DestroyWindow) },
-        .{ .name = "DefWindowProcW", .type = @TypeOf(W32.DefWindowProcW) },
-        .{ .name = "RegisterClassExW", .type = @TypeOf(W32.RegisterClassExW) },
-        .{ .name = "UnregisterClassW", .type = @TypeOf(W32.UnregisterClassW) },
-        .{ .name = "LoadCursorW", .type = @TypeOf(W32.LoadCursorW) },
-        .{ .name = "GetPropW", .type = @TypeOf(W32.GetPropW) },
-        .{ .name = "SetPropW", .type = @TypeOf(W32.SetPropW) },
-        .{ .name = "GetActiveWindow", .type = @TypeOf(W32.GetActiveWindow) },
-        .{ .name = "PeekMessageW", .type = @TypeOf(W32.PeekMessageW) },
-        .{ .name = "TranslateMessage", .type = @TypeOf(W32.TranslateMessage) },
-        .{ .name = "DispatchMessageW", .type = @TypeOf(W32.DispatchMessageW) },
-        .{ .name = "ClientToScreen", .type = @TypeOf(W32.ClientToScreen) },
-        .{ .name = "AdjustWindowRectEx", .type = @TypeOf(W32.AdjustWindowRectEx) },
-        .{ .name = "GetClientRect", .type = @TypeOf(W32.GetClientRect) },
-        .{ .name = "SetWindowPos", .type = @TypeOf(W32.SetWindowPos) },
-        .{ .name = "GetDC", .type = @TypeOf(W32.GetDC) },
-        .{ .name = "ShowWindow", .type = @TypeOf(W32.ShowWindow) },
-        .{ .name = "SetWindowTextW", .type = @TypeOf(W32.SetWindowTextW) },
-        .{ .name = "GetWindowTextLengthW", .type = @TypeOf(W32.GetWindowTextLengthW) },
-        .{ .name = "GetWindowTextW", .type = @TypeOf(W32.GetWindowTextW) },
-        .{ .name = "GetWindowRect", .type = @TypeOf(W32.GetWindowRect) },
-        .{ .name = "MoveWindow", .type = @TypeOf(W32.MoveWindow) },
-        .{ .name = "GetCursorPos", .type = @TypeOf(W32.GetCursorPos) },
-        .{ .name = "SetCursorPos", .type = @TypeOf(W32.SetCursorPos) },
-        .{ .name = "ScreenToClient", .type = @TypeOf(W32.ScreenToClient) },
-        .{ .name = "SetCursor", .type = @TypeOf(W32.SetCursor) },
-        .{ .name = "ClipCursor", .type = @TypeOf(W32.ClipCursor) },
-        .{ .name = "WindowFromPoint", .type = @TypeOf(W32.WindowFromPoint) },
-        .{ .name = "PtInRect", .type = @TypeOf(W32.PtInRect) },
-        .{ .name = "ShowCursor", .type = @TypeOf(W32.ShowCursor) },
-        .{ .name = "GetKeyState", .type = @TypeOf(W32.GetKeyState) },
-        .{ .name = "MapVirtualKeyW", .type = @TypeOf(W32.MapVirtualKeyW) },
-        .{ .name = "GetMessageTime", .type = @TypeOf(W32.GetMessageTime) },
-        .{ .name = "MessageBoxW", .type = @TypeOf(W32.MessageBoxW) },
-    }),
-    opengl32: ZWL.FunctionLoader("Opengl32", &.{
-        .{ .name = "wglCreateContext", .type = @TypeOf(W32.wglCreateContext) },
-        .{ .name = "wglDeleteContext", .type = @TypeOf(W32.wglDeleteContext) },
-        .{ .name = "wglMakeCurrent", .type = @TypeOf(W32.wglMakeCurrent) },
-        .{ .name = "wglGetProcAddress", .type = @TypeOf(W32.wglGetProcAddress) },
-        .{ .name = "wglShareLists", .type = @TypeOf(W32.wglShareLists) },
-    }),
-    gdi32: ZWL.FunctionLoader("Gdi32", &.{
-        .{ .name = "SetPixelFormat", .type = @TypeOf(W32.SetPixelFormat) },
-        .{ .name = "ChoosePixelFormat", .type = @TypeOf(W32.ChoosePixelFormat) },
-        .{ .name = "SwapBuffers", .type = @TypeOf(W32.SwapBuffers) },
-    }),
     hInstance: W32.HINSTANCE,
     /// Used to query WGL extensions
     helperWindow: struct {
@@ -236,58 +183,21 @@ pub inline fn utf16ToUtf8Z(allocator: Allocator, utf16: []const u16) error{ Inva
 
 pub fn init(lib: *Zwl) Error!void {
     const native = &lib.native;
-    native.kernel32.init() catch |e| {
-        return lib.setError(
-            "Cannot load library \"Kernel32\": {s}",
-            .{@errorName(e)},
-            error.Win32,
-        );
-    };
-    errdefer native.kernel32.deinit();
-    const kernel32 = &native.kernel32.funcs;
-    native.user32.init() catch |e| {
-        return lib.setError(
-            "Cannot load library \"User32\": {s}",
-            .{@errorName(e)},
-            error.Win32,
-        );
-    };
-    errdefer native.user32.deinit();
-    const user32 = &native.user32.funcs;
-    native.opengl32.init() catch |e| {
-        return lib.setError(
-            "Cannot load library \"Opengl32\": {s}",
-            .{@errorName(e)},
-            error.Win32,
-        );
-    };
-    errdefer native.opengl32.deinit();
-    const opengl32 = &native.opengl32.funcs;
-    native.gdi32.init() catch |e| {
-        return lib.setError(
-            "Cannot load library \"Gdi32\": {s}",
-            .{@errorName(e)},
-            error.Win32,
-        );
-    };
-    errdefer native.gdi32.deinit();
-    const gdi32 = &native.gdi32.funcs;
 
-    const hInstance: W32.HINSTANCE = @ptrCast(kernel32.GetModuleHandleW(null));
+    const hInstance: W32.HINSTANCE = @ptrCast(W32.GetModuleHandleW(null));
     native.hInstance = hInstance;
 
-    if (initCount == 0 and user32.RegisterClassExW(&.{
+    if (initCount == 0 and W32.RegisterClassExW(&.{
         .style = W32.CS_HREDRAW | W32.CS_VREDRAW | W32.CS_OWNDC,
         .lpfnWndProc = &window.windowProc,
         .hInstance = hInstance,
-        .hCursor = user32.LoadCursorW(null, W32.IDC_ARROW),
+        .hCursor = W32.LoadCursorW(null, W32.IDC_ARROW),
         .lpszClassName = WND_CLASS_NAME.ptr,
     }) == 0) return lib.setError("Cannot register window class", .{}, Error.Win32);
     initCount += 1;
 
     const helperWindow = &native.helperWindow;
-    event.pollingLib = lib;
-    const hWindow = user32.CreateWindowExW(
+    const hWindow = W32.CreateWindowExW(
         0,
         WND_CLASS_NAME.ptr,
         comptime (utf8ToUtf16Z(undefined, "ZWL helper window") catch unreachable).ptr,
@@ -303,44 +213,40 @@ pub fn init(lib: *Zwl) Error!void {
     ) orelse {
         return lib.setError("Cannot create helper window", .{}, Error.Win32);
     };
-    errdefer _ = user32.DestroyWindow(hWindow);
-    _ = user32.ShowWindow(hWindow, W32.SW_HIDE);
+    errdefer _ = W32.DestroyWindow(hWindow);
+    _ = W32.ShowWindow(hWindow, W32.SW_HIDE);
     helperWindow.handle = hWindow;
 
     { // create helper window opengl context
-        const dc = user32.GetDC(hWindow) orelse {
+        const dc = W32.GetDC(hWindow) orelse {
             return lib.setError("Cannot get device context from helper window", .{}, Error.Win32);
         };
         helperWindow.dc = dc;
 
-        if (gdi32.SetPixelFormat(dc, gdi32.ChoosePixelFormat(dc, &context.PFD), &context.PFD) == 0) {
+        if (W32.SetPixelFormat(dc, W32.ChoosePixelFormat(dc, &context.PFD), &context.PFD) == 0) {
             return lib.setError("Cannot set pixel format for device context", .{}, Error.Win32);
         }
 
-        const glrc = opengl32.wglCreateContext(dc) orelse {
+        const glrc = W32.wglCreateContext(dc) orelse {
             return lib.setError("Cannot create WGL context", .{}, Error.Win32);
         };
-        errdefer _ = opengl32.wglDeleteContext(glrc);
+        errdefer _ = W32.wglDeleteContext(glrc);
         helperWindow.glrc = glrc;
 
-        _ = opengl32.wglMakeCurrent(dc, glrc);
+        _ = W32.wglMakeCurrent(dc, glrc);
 
-        native.wglCreateContextAttribsARB = @ptrCast(opengl32.wglGetProcAddress("wglCreateContextAttribsARB"));
-        native.wglSwapIntervalEXT = @ptrCast(opengl32.wglGetProcAddress("wglSwapIntervalEXT"));
+        native.wglCreateContextAttribsARB = @ptrCast(W32.wglGetProcAddress("wglCreateContextAttribsARB"));
+        native.wglSwapIntervalEXT = @ptrCast(W32.wglGetProcAddress("wglSwapIntervalEXT"));
 
-        _ = opengl32.wglMakeCurrent(dc, null);
+        _ = W32.wglMakeCurrent(dc, null);
     }
 }
 
 pub fn deinit(lib: *Zwl) void {
     initCount -= 1;
-    _ = lib.native.opengl32.funcs.wglDeleteContext(lib.native.helperWindow.glrc);
-    _ = lib.native.user32.funcs.DestroyWindow(lib.native.helperWindow.handle);
+    _ = W32.wglDeleteContext(lib.native.helperWindow.glrc);
+    _ = W32.DestroyWindow(lib.native.helperWindow.handle);
     if (initCount == 0) {
-        _ = lib.native.user32.funcs.UnregisterClassW(WND_CLASS_NAME.ptr, lib.native.hInstance);
+        _ = W32.UnregisterClassW(WND_CLASS_NAME.ptr, lib.native.hInstance);
     }
-    lib.native.kernel32.deinit();
-    lib.native.user32.deinit();
-    lib.native.opengl32.deinit();
-    lib.native.gdi32.deinit();
 }

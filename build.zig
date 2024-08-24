@@ -38,13 +38,30 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
-        .strip = if (optimize == .ReleaseFast) true else null,
+        .link_libc = false,
+        .strip = true,
     });
     exe.root_module.addImport("zwl", zwl);
     exe.root_module.addImport("zgll", zgll);
     if (optimize != .Debug) {
         exe.subsystem = .Windows;
+    }
+
+    const bootstrap_shared_dir = b.fmt("{s}/bootstrap_so", .{b.install_prefix});
+    if (builtin.os.tag != target.result.os.tag) {
+        zwl.addLibraryPath(.{ .cwd_relative = bootstrap_shared_dir });
+    }
+
+    // Bootstrap shader libraries for
+    // forein compilation
+    switch (target.result.os.tag) {
+        .windows => if (builtin.os.tag != .windows) {
+            addBootstrapSharedLib(b, target, optimize, "Kernel32", "src/windows/kernel32_bs.zig");
+            addBootstrapSharedLib(b, target, optimize, "User32", "src/windows/user32_bs.zig");
+            addBootstrapSharedLib(b, target, optimize, "Gdi32", "src/windows/gdi32_bs.zig");
+            addBootstrapSharedLib(b, target, optimize, "Opengl32", "src/windows/opengl32_bs.zig");
+        },
+        else => {},
     }
 
     b.installArtifact(exe);
@@ -82,4 +99,24 @@ fn isString(comptime T: type) bool {
     }
     if (tinfo.Pointer.size == .Many and tinfo.Pointer.sentinel == null) return false;
     return (tinfo.Pointer.size != .One) and tinfo.Pointer.child == u8;
+}
+
+fn addBootstrapSharedLib(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    name: []const u8,
+    sub_path: []const u8,
+) void {
+    const lib = b.addSharedLibrary(.{
+        .name = name,
+        .root_source_file = b.path(sub_path),
+        .target = target,
+        .optimize = optimize,
+    });
+    b.getInstallStep().dependOn(&b.addInstallArtifact(lib, .{
+        .dest_dir = .{ .override = .{ .custom = "bootstrap_so" } },
+        .implib_dir = .{ .override = .{ .custom = "bootstrap_so" } },
+        .pdb_dir = .disabled,
+    }).step);
 }

@@ -29,26 +29,16 @@ pub const GLContext = struct {
     threadlocal var currentContext: ?GLContext = null;
 
     dc: W32.HDC,
-    user32: *const USER32,
-    opengl32: *const OPENGL32,
-    gdi32: *const GDI32,
     handle: W32.HGLRC,
     interval: i32,
 
     pub fn init(self: *GLContext, lib: *Zwl, window: *Window, config: ZWL.GLContext.Config) Error!void {
-        self.user32 = &lib.native.user32.funcs;
-        self.opengl32 = &lib.native.opengl32.funcs;
-        self.gdi32 = &lib.native.gdi32.funcs;
-        const user32 = self.user32;
-        const opengl32 = self.opengl32;
-        const gdi32 = self.gdi32;
-
-        const dc = user32.GetDC(window.native.handle) orelse {
+        const dc = W32.GetDC(window.native.handle) orelse {
             return lib.setError("Cannot get device context from window", .{}, Error.Win32);
         };
         self.dc = dc;
 
-        if (gdi32.SetPixelFormat(dc, gdi32.ChoosePixelFormat(dc, &PFD), &PFD) == 0) {
+        if (W32.SetPixelFormat(dc, W32.ChoosePixelFormat(dc, &PFD), &PFD) == 0) {
             return lib.setError("Cannot set pixel format for device context", .{}, Error.Win32);
         }
 
@@ -64,7 +54,7 @@ pub const GLContext = struct {
         }
 
         if (lib.native.wglCreateContextAttribsARB) |wglCreateContextAttribsARB| {
-            var attribs: [20][2]i32 = undefined;
+            var attribs: [10][2]i32 = undefined;
             var index: u32 = 0;
             var mask: u32 = 0;
             var flags: u32 = 0;
@@ -83,14 +73,17 @@ pub const GLContext = struct {
                 @panic("OpenGL ES not yet implemented");
             }
 
-            if (config.debug) {
-                flags |= W32.WGL_CONTEXT_DEBUG_BIT_ARB;
-            }
-
-            if (config.version.major != 1 or config.version.minor != 0) {
+            if (config.version.major != 0 or
+                config.version.minor != 0)
+            {
+                std.debug.assert(config.version.major != 0);
                 attribs[index] = .{ W32.WGL_CONTEXT_MAJOR_VERSION_ARB, config.version.major };
                 attribs[index + 1] = .{ W32.WGL_CONTEXT_MINOR_VERSION_ARB, config.version.minor };
                 index += 2;
+            }
+
+            if (config.debug) {
+                flags |= W32.WGL_CONTEXT_DEBUG_BIT_ARB;
             }
 
             if (flags != 0) {
@@ -103,14 +96,13 @@ pub const GLContext = struct {
             }
 
             attribs[index] = .{ 0, 0 };
-            index += 1;
 
             self.handle = wglCreateContextAttribsARB(
                 dc,
                 if (config.share) |share| share.native.handle else null,
                 @ptrCast(&attribs),
             ) orelse {
-                switch (lib.native.kernel32.funcs.GetLastError()) {
+                switch (W32.GetLastError()) {
                     @as(i32, @bitCast(@as(u32, 0xc0070000))) | W32.ERROR_INVALID_VERSION_ARB => {
                         if (config.version.api == .opengl) {
                             return lib.setError(
@@ -160,13 +152,13 @@ pub const GLContext = struct {
             return;
         }
 
-        self.handle = opengl32.wglCreateContext(dc) orelse {
+        self.handle = W32.wglCreateContext(dc) orelse {
             return lib.setError("Cannot create WGL context", .{}, Error.Win32);
         };
-        errdefer _ = opengl32.wglDeleteContext(self.handle);
+        errdefer _ = W32.wglDeleteContext(self.handle);
 
         if (config.share) |share| {
-            if (opengl32.wglShareLists(share.native.handle, self.handle) == 0) {
+            if (W32.wglShareLists(share.native.handle, self.handle) == 0) {
                 return lib.setError(
                     "Failed to enable sharing with specified OpenGL context",
                     .{},
@@ -176,22 +168,22 @@ pub const GLContext = struct {
         }
     }
     pub fn deinit(self: *GLContext) void {
-        _ = self.opengl32.wglDeleteContext(self.handle);
+        _ = W32.wglDeleteContext(self.handle);
     }
 
     pub fn makeCurrent(lib: *Zwl, opt_ctx: ?*ZWL.GLContext) Error!void {
-        const opengl32 = &lib.native.opengl32.funcs;
+        _ = lib;
         currentContext = null;
         if (opt_ctx) |ctx| {
-            if (opengl32.wglMakeCurrent(ctx.native.dc, ctx.native.handle) == 0) {
+            if (W32.wglMakeCurrent(ctx.native.dc, ctx.native.handle) == 0) {
                 return ctx.owner.owner.setError("Failed to make GLContext current", .{}, Error.Win32);
             }
             currentContext = ctx.native;
-        } else _ = opengl32.wglMakeCurrent(undefined, null);
+        } else _ = W32.wglMakeCurrent(undefined, null);
     }
 
     pub fn swapBuffers(ctx: *ZWL.GLContext) Error!void {
-        _ = ctx.native.gdi32.SwapBuffers(ctx.native.dc);
+        _ = W32.SwapBuffers(ctx.native.dc);
     }
 
     pub fn swapInterval(lib: *Zwl, interval: u32) Error!void {
@@ -200,6 +192,8 @@ pub const GLContext = struct {
             if (wglSwapIntervalEXT(@bitCast(interval)) == 0) {
                 return lib.setError("Cannot find current context", .{}, Error.Win32);
             }
+        } else {
+            return lib.setError("swapInterval requires wglSwapIntervalEXT (unavailable)", .{}, Error.Win32);
         }
     }
 };

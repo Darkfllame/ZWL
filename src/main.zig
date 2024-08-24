@@ -2,10 +2,8 @@ const std = @import("std");
 const ZWL = @import("zwl");
 const GL = @import("zgll").GL;
 
-var zwl: ZWL.Zwl = undefined;
-
-const VERTEX_SHADER_SOURCE = @embedFile("demo.vert");
-const FRAGMENT_SHADER_SOURCE = @embedFile("demo.frag");
+const VERTEX_SHADER_SOURCE: []const u8 = @embedFile("demo.vert");
+const FRAGMENT_SHADER_SOURCE: []const u8 = @embedFile("demo.frag");
 const TRIANGLE_VERTICES = [_]f32{
     -0.5, -0.5, 1, 0, 0,
     0.5,  -0.5, 0, 1, 0,
@@ -32,6 +30,8 @@ pub fn main() !void {
     defer _ = if (DEBUG) gpa.deinit();
     const allocator = if (DEBUG) gpa.allocator() else std.heap.page_allocator;
 
+    const zwl = try allocator.create(ZWL.Zwl);
+    defer allocator.destroy(zwl);
     try zwl.init(allocator, .{});
     defer zwl.deinit();
 
@@ -81,7 +81,7 @@ pub fn main() !void {
 
     gl.bindBuffer(GL.ARRAY_BUFFER, VBO);
 
-    gl.bufferData(GL.ARRAY_BUFFER, @sizeOf(@TypeOf(TRIANGLE_VERTICES)), @ptrCast(&TRIANGLE_VERTICES), GL.STATIC_DRAW);
+    gl.bufferData(GL.ARRAY_BUFFER, @sizeOf(@TypeOf(TRIANGLE_VERTICES)), &TRIANGLE_VERTICES, GL.STATIC_DRAW);
 
     gl.vertexAttribPointer(0, 2, GL.FLOAT, false, @sizeOf(f32) * 5, @ptrFromInt(0));
     gl.enableVertexArrayAttrib(VAO, 0);

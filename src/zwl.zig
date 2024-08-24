@@ -36,11 +36,17 @@ pub const Error = FunctionLoaderError || error{
 pub const InitConfig = struct {};
 
 pub const Zwl = struct {
+    const global = struct {
+        var initialized: bool = false;
+        var gPlatform: Platform = undefined;
+    };
+
+    comptime platform: *Platform = &global.gPlatform,
+
     allocator: Allocator,
     errorBuffer: [config.ERROR_BUFFER_SIZE]u8,
     errFormatBuffer: [config.ERROR_BUFFER_SIZE]u8,
     currentError: ?[]u8,
-    platform: Platform,
     native: platform.NativeData,
 
     pub fn init(self: *Zwl, allocator: Allocator, iConfig: InitConfig) Error!void {
@@ -51,14 +57,15 @@ pub const Zwl = struct {
             .errFormatBuffer = [_]u8{0} ** config.ERROR_BUFFER_SIZE,
             .currentError = null,
             .native = undefined,
-            .platform = undefined,
         };
         comptime {
             if (@TypeOf(platform.setPlatform) != fn (*Platform) Error!void) {
                 @compileError("Expected platform.setPlatform to be 'fn (*Platform) Error!void'");
             }
         }
-        try platform.setPlatform(&self.platform);
+        if (!global.initialized) {
+            try platform.setPlatform(self.platform);
+        }
         try self.platform.init(self);
     }
     pub fn deinit(self: *Zwl) void {
@@ -102,11 +109,6 @@ pub const Zwl = struct {
     pub const makeContextCurrent = GLContext.makeCurrent;
 };
 
-pub const NativeFunction = struct {
-    name: [:0]const u8,
-    type: type,
-};
-
 pub const Platform = struct {
     init: *const fn (*Zwl) Error!void,
     deinit: *const fn (*Zwl) void,
@@ -140,47 +142,10 @@ pub const Platform = struct {
     },
 };
 
-pub fn FunctionLoader(comptime libName: []const u8, comptime decls: []const NativeFunction) type {
-    const Type = std.builtin.Type;
-    comptime var fields: [decls.len]Type.StructField = undefined;
-    for (decls, 0..) |d, i| {
-        fields[i] = .{
-            .name = d.name,
-            .type = *const GetFunctionType(d.type),
-            .default_value = null,
-            .is_comptime = false,
-            .alignment = @alignOf(*const GetFunctionType(d.type)),
-        };
-    }
-    const FuncList = @Type(Type{ .Struct = .{
-        .layout = .auto,
-        .backing_integer = null,
-        .fields = &fields,
-        .decls = &.{},
-        .is_tuple = false,
-    } });
-    return struct {
-        const Self = @This();
-        const DynLib = std.DynLib;
-
-        lib: DynLib,
-        funcs: FuncList,
-
-        pub fn init(self: *Self) FunctionLoaderError!void {
-            var dl = DynLib.open(libName) catch return error.LibraryNotFound;
-            errdefer dl.close();
-            self.lib = dl;
-
-            inline for (decls) |d| {
-                @field(self.funcs, d.name) = dl.lookup(*const GetFunctionType(d.type), d.name) orelse
-                    return error.FunctionNotFound;
-            }
-        }
-        pub fn deinit(self: *Self) void {
-            self.lib.close();
-        }
-    };
-}
+pub const NativeFunction = struct {
+    name: [:0]const u8,
+    type: type,
+};
 
 pub fn checkNativeDecls(comptime T: type, comptime decls: []const NativeFunction) void {
     for (decls) |rDecl| {
@@ -195,20 +160,22 @@ pub fn checkNativeDecls(comptime T: type, comptime decls: []const NativeFunction
 
 pub fn MBpanic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
     @setCold(true);
+    const first_ret_addr = ret_addr orelse @returnAddress();
 
     var text: [4096]u8 = undefined;
     var len: usize = 0;
     var fbs = std.io.fixedBufferStream(&text);
-    const first_ret_addr = ret_addr orelse @returnAddress();
     fbs.writer().print("{s}\n", .{msg}) catch {};
-    if (std.debug.getSelfDebugInfo()) |dbi| {
-        std.debug.writeCurrentStackTrace(
-            fbs.writer(),
-            dbi,
-            .no_color,
-            first_ret_addr,
-        ) catch {};
-    } else |_| {}
+    if (!builtin.strip_debug_info) {
+        if (std.debug.getSelfDebugInfo()) |dbi| {
+            std.debug.writeCurrentStackTrace(
+                fbs.writer(),
+                dbi,
+                .no_color,
+                first_ret_addr,
+            ) catch {};
+        } else |_| {}
+    }
     if (error_return_trace) |ert| {
         ert.format("", .{}, fbs.writer()) catch {};
     }
@@ -237,24 +204,4 @@ pub fn MBpanic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, re
     zwl.deinit();
     if (ret) |_| {} else |_| {}
     std.builtin.default_panic(msg, error_return_trace, first_ret_addr);
-}
-
-fn GetFunctionType(comptime T: type) type {
-    const tinfo = @typeInfo(T);
-
-    const noOptTinfo = if (tinfo == .Optional)
-        @typeInfo(tinfo.Optional.child)
-    else
-        tinfo;
-
-    const noPtrTinfo = if (noOptTinfo == .Pointer)
-        @typeInfo(noOptTinfo.Pointer.child)
-    else
-        noOptTinfo;
-
-    if (noPtrTinfo != .Fn) {
-        @compileError("Expected function type, got: " ++ @typeName(T));
-    }
-
-    return @Type(noPtrTinfo);
 }

@@ -49,3 +49,70 @@ fn isWaylandSupported() bool {
         return true;
     } else |_| return false;
 }
+
+pub const NativeFunction = struct {
+    name: [:0]const u8,
+    type: type,
+};
+
+pub fn FunctionLoader(comptime libName: []const u8, comptime decls: []const NativeFunction) type {
+    const Type = std.builtin.Type;
+    comptime var fields: [decls.len]Type.StructField = undefined;
+    for (decls, 0..) |d, i| {
+        fields[i] = .{
+            .name = d.name,
+            .type = *const GetFunctionType(d.type),
+            .default_value = null,
+            .is_comptime = false,
+            .alignment = @alignOf(*const GetFunctionType(d.type)),
+        };
+    }
+    const FuncList = @Type(Type{ .Struct = .{
+        .layout = .auto,
+        .backing_integer = null,
+        .fields = &fields,
+        .decls = &.{},
+        .is_tuple = false,
+    } });
+    return struct {
+        const Self = @This();
+        const DynLib = std.DynLib;
+
+        lib: DynLib,
+        funcs: FuncList,
+
+        pub fn init(self: *Self) error{ LibraryNotFound, FunctionNotFound }!void {
+            var dl = DynLib.open(libName) catch return error.LibraryNotFound;
+            errdefer dl.close();
+            self.lib = dl;
+
+            inline for (decls) |d| {
+                @field(self.funcs, d.name) = dl.lookup(*const GetFunctionType(d.type), d.name) orelse
+                    return error.FunctionNotFound;
+            }
+        }
+        pub fn deinit(self: *Self) void {
+            self.lib.close();
+        }
+    };
+}
+
+fn GetFunctionType(comptime T: type) type {
+    const tinfo = @typeInfo(T);
+
+    const noOptTinfo = if (tinfo == .Optional)
+        @typeInfo(tinfo.Optional.child)
+    else
+        tinfo;
+
+    const noPtrTinfo = if (noOptTinfo == .Pointer)
+        @typeInfo(noOptTinfo.Pointer.child)
+    else
+        noOptTinfo;
+
+    if (noPtrTinfo != .Fn) {
+        @compileError("Expected function type, got: " ++ @typeName(T));
+    }
+
+    return @Type(noPtrTinfo);
+}
