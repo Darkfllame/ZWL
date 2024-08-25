@@ -9,6 +9,7 @@ const unicode = std.unicode;
 const Allocator = std.mem.Allocator;
 
 const Platform = ZWL.Platform;
+const InitConfig = ZWL.InitConfig;
 const Error = ZWL.Error;
 const Key = ZWL.Key;
 const Zwl = ZWL.Zwl;
@@ -181,7 +182,8 @@ pub inline fn utf16ToUtf8Z(allocator: Allocator, utf16: []const u16) error{ Inva
     return unicode.utf16LeToUtf8AllocZ(allocator, utf16) catch error.InvalidUtf16;
 }
 
-pub fn init(lib: *Zwl) Error!void {
+pub fn init(lib: *Zwl, config: InitConfig) Error!void {
+    _ = config;
     const native = &lib.native;
 
     const hInstance: W32.HINSTANCE = @ptrCast(W32.GetModuleHandleW(null));

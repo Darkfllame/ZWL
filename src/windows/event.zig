@@ -55,7 +55,7 @@ pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
                 if (W32.GetKeyState(vk) & 0x8000 != 0) {
                     continue;
                 }
-                if (wnd.native.keys[@intFromEnum(key)] != .press) {
+                if (wnd.keys[@intFromEnum(key)] != .press) {
                     continue;
                 }
 

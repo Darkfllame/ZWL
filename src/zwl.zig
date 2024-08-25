@@ -33,7 +33,13 @@ pub const Error = FunctionLoaderError || error{
     Cocoa,
 };
 
-pub const InitConfig = struct {};
+pub const InitConfig = struct {
+    /// By default, the linux implementation will try to
+    /// use wayland first, this changes this behaviour to
+    /// try use X11 first, if not available, it'll try using
+    /// wayland.
+    linuxPreferX11: bool = false,
+};
 
 pub const Zwl = struct {
     const global = struct {
@@ -50,7 +56,6 @@ pub const Zwl = struct {
     native: platform.NativeData,
 
     pub fn init(self: *Zwl, allocator: Allocator, iConfig: InitConfig) Error!void {
-        _ = iConfig;
         self.* = .{
             .allocator = allocator,
             .errorBuffer = [_]u8{0} ** config.ERROR_BUFFER_SIZE,
@@ -66,7 +71,7 @@ pub const Zwl = struct {
         if (!global.initialized) {
             try platform.setPlatform(self.platform);
         }
-        try self.platform.init(self);
+        try self.platform.init(self, iConfig);
     }
     pub fn deinit(self: *Zwl) void {
         self.platform.deinit(self);
@@ -110,25 +115,22 @@ pub const Zwl = struct {
 };
 
 pub const Platform = struct {
-    init: *const fn (*Zwl) Error!void,
+    init: *const fn (*Zwl, InitConfig) Error!void,
     deinit: *const fn (*Zwl) void,
     window: struct {
         createMessageBox: *const fn (*Zwl, Window.MBConfig) Error!Window.MBButton,
         init: *const fn (*platform.Window, *Zwl, Window.Config) Error!void,
         deinit: *const fn (*platform.Window) void,
         setPosition: *const fn (*Window, u32, u32) void,
-        getSize: *const fn (*Window, ?*u32, ?*u32) void,
         setSize: *const fn (*Window, u32, u32) void,
         setSizeLimits: *const fn (*Window, ?u32, ?u32, ?u32, ?u32) void,
         getFramebufferSize: *const fn (*Window, ?*u32, ?*u32) void,
         setVisible: *const fn (*Window, bool) void,
         setTitle: *const fn (*Window, []const u8) Error!void,
-        getTitle: *const fn (*Window) []const u8,
         isFocused: *const fn (*Window) bool,
         getMousePos: *const fn (*Window, ?*u32, ?*u32) void,
         setMousePos: *const fn (*Window, u32, u32) void,
         setMouseVisible: *const fn (*Window, bool) void,
-        getKey: *const fn (*Window, Key) Key.Action,
     },
     event: struct {
         pollEvent: *const fn (*Zwl, ?*Window) Error!?Event,

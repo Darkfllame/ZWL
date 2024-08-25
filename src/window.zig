@@ -10,19 +10,30 @@ const Error = ZWL.Error;
 const GLContext = ZWL.GLContext;
 const Zwl = ZWL.Zwl;
 
+const MAX_U32 = std.math.maxInt(u32);
+
 pub const Window = struct {
     owner: *Zwl,
     config: Config,
+    mouse: struct {
+        lastY: u16 = 0,
+        lastX: u16 = 0,
+    } = .{},
+    lastY: u16 = 0,
+    lastX: u16 = 0,
+    keys: [@intFromEnum(Key.menu) + 1]Key.Action = std.mem.zeroes([@intFromEnum(Key.menu) + 1]Key.Action),
     native: ZWL.platform.Window,
 
     pub const Flags = packed struct {
-        /// if `no_deco` is active, this field
-        /// is not used.
+        /// Note:
+        /// - Win32:
+        ///     if `noDecoration` is active, this field
+        ///     is not used.
         resizable: bool = false,
         hidden: bool = false,
-        no_decoration: bool = false,
+        noDecoration: bool = false,
         floating: bool = false,
-        hide_mouse: bool = false,
+        hideMouse: bool = false,
     };
 
     pub const Position = union(enum) {
@@ -52,6 +63,10 @@ pub const Window = struct {
         y: Position = .default,
         sizeLimits: SizeLimits = .{},
         flags: Flags = .{},
+        aspectRatio: ?struct {
+            numer: u32,
+            denom: u32,
+        } = null,
     };
 
     pub const MBMode = enum {
@@ -99,12 +114,21 @@ pub const Window = struct {
         errdefer owner.allocator.destroy(self);
 
         std.debug.assert((_config.sizeLimits.wmin orelse 0) <
-            (_config.sizeLimits.wmax orelse std.math.maxInt(u32)));
+            (_config.sizeLimits.wmax orelse MAX_U32));
         std.debug.assert((_config.sizeLimits.hmin orelse 0) <
-            (_config.sizeLimits.hmax orelse std.math.maxInt(u32)));
+            (_config.sizeLimits.hmax orelse MAX_U32));
 
-        self.owner = owner;
-        self.config = _config;
+        self.* = Window{
+            .owner = owner,
+            .config = _config,
+            .native = undefined,
+        };
+
+        self.config.title = owner.allocator.dupe(u8, _config.title) catch |e| {
+            return owner.setError("Cannot copy window title", .{}, e);
+        };
+        errdefer owner.allocator.free(self.config.title);
+
         try owner.platform.window.init(&self.native, owner, _config);
         errdefer owner.platform.window.deinit(&self.native);
 
@@ -126,30 +150,88 @@ pub const Window = struct {
         return self.owner.platform.window.getPosition(self, x, y);
     }
     pub fn setPosition(self: *Window, x: u32, y: u32) void {
+        if (self.lastX == x and
+            self.lastY == y)
+        {
+            return;
+        }
+        self.lastX = x;
+        self.lastY = y;
         return self.owner.platform.window.setPosition(self, x, y);
     }
-    pub fn getSize(self: *Window, x: ?*u32, y: ?*u32) void {
-        return self.owner.platform.window.getSize(self, x, y);
+    pub fn getSize(self: *Window, w: ?*u32, h: ?*u32) void {
+        if (w) |wp| wp.* = self.config.width;
+        if (h) |hp| hp.* = self.config.height;
     }
-    pub fn setSize(self: *Window, x: u32, y: u32) void {
-        return self.owner.platform.window.setSize(self, x, y);
+    pub fn setSize(self: *Window, w: u32, h: u32) void {
+        if (self.config.width == w and
+            self.config.height == h)
+        {
+            return;
+        }
+
+        const sl = self.config.sizeLimits;
+        const width = std.math.clamp(
+            w,
+            sl.wmin orelse 0,
+            sl.wmax orelse std.math.maxInt(u32),
+        );
+        const height = std.math.clamp(
+            h,
+            sl.wmin orelse 0,
+            sl.wmax orelse std.math.maxInt(u32),
+        );
+
+        self.config.width = width;
+        self.config.height = height;
+
+        if (!self.config.flags.resizable) {
+            return;
+        }
+        return self.owner.platform.window.setSize(self, width, height);
     }
     pub fn setSizeLimits(self: *Window, wmin: ?u32, wmax: ?u32, hmin: ?u32, hmax: ?u32) void {
+        std.debug.assert((wmin orelse 0) < (wmax orelse MAX_U32));
+        std.debug.assert((hmin orelse 0) < (hmax orelse MAX_U32));
+
+        self.config.sizeLimits = .{
+            .wmin = wmin,
+            .wmax = wmax,
+            .hmin = hmin,
+            .hmax = hmax,
+        };
+
+        if (!self.config.flags.resizable) {
+            return;
+        }
+
         return self.owner.platform.window.setSizeLimits(self, wmin, wmax, hmin, hmax);
     }
     pub fn getFramebufferSize(self: *Window, x: ?*u32, y: ?*u32) void {
         return self.owner.platform.window.getFramebufferSize(self, x, y);
     }
     pub fn setVisible(self: *Window, value: bool) void {
+        if (self.config.flags.hidden == !value) {
+            return;
+        }
+        self.config.flags.hidden = !value;
         return self.owner.platform.window.setVisible(self, value);
     }
     pub fn setTitle(self: *Window, title: []const u8) Error!void {
+        if (std.mem.eql(u8, title, self.config.title)) {
+            return;
+        }
+        const title_copy = self.owner.allocator.dupe(u8, title) catch |e| {
+            return self.owner.setError("Cannot copy window title", .{}, e);
+        };
+        self.owner.allocator.free(self.config.title);
+        self.config.title = title_copy;
         return self.owner.platform.window.setTitle(self, title);
     }
     /// The returned string is allocated via the allocator
     /// given to `Zwl.init()`.
     pub fn getTitle(self: *Window) []const u8 {
-        return self.owner.platform.window.getTitle(self);
+        return self.config.title;
     }
     pub fn isFocused(self: *Window) bool {
         return self.owner.platform.window.isFocused(self);
@@ -164,6 +246,6 @@ pub const Window = struct {
         return self.owner.platform.window.setMouseVisible(self, value);
     }
     pub fn getKey(self: *Window, key: Key) Key.Action {
-        return self.owner.platform.window.getKey(self, key);
+        return self.keys[@intFromEnum(key)];
     }
 };

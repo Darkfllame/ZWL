@@ -19,30 +19,16 @@ pub const WND_PTR_PROP_NAME = internal.utf8ToUtf16Z(undefined, "ZWL") catch unre
 const MAX_U32 = math.maxInt(u32);
 
 pub const NativeWindow = struct {
-    arenaAllocator: std.heap.ArenaAllocator,
     handle: W32.HWND,
-    aspectRatio: ?struct {
-        numer: u32,
-        denom: u32,
-    } = null,
-    lastMouseX: u16 = 0,
-    lastMouseY: u16 = 0,
-    keys: [@intFromEnum(Key.menu) + 1]Key.Action = std.mem.zeroes([@intFromEnum(Key.menu) + 1]Key.Action),
 
     pub fn init(self: *NativeWindow, lib: *Zwl, config: Window.Config) Error!void {
         const window: *Window = @fieldParentPtr("native", self);
         self.* = .{
-            .arenaAllocator = std.heap.ArenaAllocator.init(lib.allocator),
             .handle = undefined,
         };
-        defer _ = self.arenaAllocator.reset(.free_all);
-        const arena = self.arenaAllocator.allocator();
-
-        const title_copy = window.owner.allocator.dupe(u8, config.title) catch |e| {
-            return lib.setError("Cannot copy window title", .{}, e);
-        };
-        errdefer window.owner.allocator.free(title_copy);
-        window.config.title = title_copy;
+        var aa = std.heap.ArenaAllocator.init(window.owner.allocator);
+        defer _ = aa.reset(.free_all);
+        const arena = aa.allocator();
 
         const wideTitle = internal.utf8ToUtf16Z(arena, config.title) catch |e| {
             return lib.setError("Cannot create wide title for Win32", .{}, e);
@@ -51,7 +37,7 @@ pub const NativeWindow = struct {
         const sizeLimits = config.sizeLimits;
         const style = windowFlagsToNative(blk: {
             var flags = config.flags;
-            if (!flags.no_decoration and
+            if (!flags.noDecoration and
                 sizeLimits.wmin != null and sizeLimits.wmax != null and
                 sizeLimits.hmin != null and sizeLimits.hmax != null and
                 sizeLimits.wmin == sizeLimits.wmax and
@@ -86,13 +72,12 @@ pub const NativeWindow = struct {
 
         self.handle = handle;
 
-        window.setMouseVisible(!config.flags.hide_mouse);
+        window.setMouseVisible(!config.flags.hideMouse);
     }
 
     pub fn deinit(self: *NativeWindow) void {
         const window: *Window = @fieldParentPtr("native", self);
         window.owner.allocator.free(window.config.title);
-        self.arenaAllocator.deinit();
         _ = W32.DestroyWindow(self.handle);
     }
 
@@ -184,35 +169,12 @@ pub const NativeWindow = struct {
         );
     }
 
-    pub fn getSize(window: *Window, w: ?*u32, h: ?*u32) void {
-        var area: W32.RECT = .{};
-        _ = W32.GetClientRect(window.native.handle, &area);
-
-        {
-            @setRuntimeSafety(false);
-            if (w) |_| w.?.* = @bitCast(area.right);
-            if (h) |_| h.?.* = @bitCast(area.bottom);
-        }
-    }
-
     pub fn setSize(window: *Window, w: u32, h: u32) void {
-        const sl = window.config.sizeLimits;
-        const width = clamp(
-            w,
-            sl.wmin orelse 0,
-            sl.wmax orelse MAX_U32,
-        );
-        const height = clamp(
-            h,
-            sl.wmin orelse 0,
-            sl.wmax orelse MAX_U32,
-        );
-
         var rect = W32.RECT{
             .left = 0,
             .top = 0,
-            .right = @bitCast(width),
-            .bottom = @bitCast(height),
+            .right = @intCast(w),
+            .bottom = @intCast(h),
         };
 
         _ = W32.AdjustWindowRectEx(
@@ -240,20 +202,6 @@ pub const NativeWindow = struct {
         hmin: ?u32,
         hmax: ?u32,
     ) void {
-        assert((wmin orelse 0) < (wmax orelse MAX_U32));
-        assert((hmin orelse 0) < (hmax orelse MAX_U32));
-
-        window.config.sizeLimits = .{
-            .wmin = wmin,
-            .wmax = wmax,
-            .hmin = hmin,
-            .hmax = hmax,
-        };
-
-        if (!window.config.flags.resizable) {
-            return;
-        }
-
         if ((wmin == null and hmin == null) and
             (wmax == null or hmax == null))
         {
@@ -273,31 +221,31 @@ pub const NativeWindow = struct {
         );
     }
 
-    pub const getFramebufferSize = getSize;
+    pub fn getFramebufferSize(window: *Window, w: ?*u32, h: ?*u32) void {
+        var area: W32.RECT = .{};
+        _ = W32.GetClientRect(window.native.handle, &area);
+
+        {
+            @setRuntimeSafety(false);
+            if (w) |_| w.?.* = @bitCast(area.right);
+            if (h) |_| h.?.* = @bitCast(area.bottom);
+        }
+    }
 
     pub fn setVisible(window: *Window, value: bool) void {
         _ = W32.ShowWindow(window.native.handle, W32.SW_SHOWNA * @intFromBool(value));
     }
 
     pub fn setTitle(window: *Window, title: []const u8) Error!void {
-        defer _ = window.native.arenaAllocator.reset(.free_all);
-        const arena = window.native.arenaAllocator.allocator();
+        var aa = std.heap.ArenaAllocator.init(window.owner.allocator);
+        defer _ = aa.reset(.free_all);
+        const arena = aa.allocator();
 
         const wideTitle = internal.utf8ToUtf16Z(arena, title) catch |e| {
             return window.owner.setError("Cannot create wide title for Win32", .{}, e);
         };
 
         _ = W32.SetWindowTextW(window.native.handle, wideTitle.ptr);
-
-        const title_copy = window.owner.allocator.dupe(u8, title) catch |e| {
-            return window.owner.setError("Cannot copy window title", .{}, e);
-        };
-        window.owner.allocator.free(window.config.title);
-        window.config.title = title_copy;
-    }
-
-    pub fn getTitle(window: *Window) []const u8 {
-        return window.config.title;
     }
 
     pub fn isFocused(window: *Window) bool {
@@ -315,12 +263,12 @@ pub const NativeWindow = struct {
     }
 
     pub fn setMousePos(window: *Window, x: u32, y: u32) void {
-        if (window.native.lastMouseX == x and window.native.lastMouseY == y) {
+        if (window.mouse.lastX == x and window.mouse.lastY == y) {
             return;
         }
         var pos: W32.POINT = .{ .x = @bitCast(x), .y = @bitCast(y) };
-        window.native.lastMouseX = @intCast(x);
-        window.native.lastMouseX = @intCast(y);
+        window.mouse.lastX = @intCast(x);
+        window.mouse.lastX = @intCast(y);
         _ = W32.ClientToScreen(window.native.handle, &pos);
         _ = W32.SetCursorPos(pos.x, pos.y);
     }
@@ -328,10 +276,6 @@ pub const NativeWindow = struct {
     pub fn setMouseVisible(window: *Window, value: bool) void {
         _ = window;
         _ = W32.ShowCursor(@intFromBool(value));
-    }
-
-    pub fn getKey(window: *Window, key: ZWL.Key) ZWL.Key.Action {
-        return window.native.keys[@intFromEnum(key)];
     }
 };
 
@@ -355,8 +299,8 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
             const x: u16 = @truncate(@as(u64, @bitCast(lp)) & 0xFFFF);
             const y: u16 = @truncate(@as(u64, @bitCast(lp >> 16)) & 0xFFFF);
 
-            const dx = @as(i16, @bitCast(x)) - @as(i16, @bitCast(window.native.lastMouseX));
-            const dy = @as(i16, @bitCast(y)) - @as(i16, @bitCast(window.native.lastMouseY));
+            const dx = @as(i16, @bitCast(x)) - @as(i16, @bitCast(window.mouse.lastX));
+            const dy = @as(i16, @bitCast(y)) - @as(i16, @bitCast(window.mouse.lastY));
             event.polledEvent = Event{ .mouseMoved = .{
                 .window = window,
                 .x = x,
@@ -365,12 +309,12 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
                 .dy = dy,
             } };
 
-            window.native.lastMouseX = x;
-            window.native.lastMouseY = y;
+            window.mouse.lastX = x;
+            window.mouse.lastY = y;
         },
         W32.WM_SIZING => {
             const rect: *W32.RECT = @ptrFromInt(@as(u64, @bitCast(lp)));
-            applyWindowConstraints(&window.config, wp, rect);
+            applyWindowConstraints(window, wp, rect);
         },
         W32.WM_GETMINMAXINFO => {
             if (!window.config.flags.resizable) {
@@ -462,15 +406,15 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
 
             var repeated: bool = false;
 
-            if (action == .release and window.native.keys[@intFromEnum(key)] == .release) {
+            if (action == .release and window.keys[@intFromEnum(key)] == .release) {
                 break :blk;
             }
 
-            if (action == .press and window.native.keys[@intFromEnum(key)] == .press) {
+            if (action == .press and window.keys[@intFromEnum(key)] == .press) {
                 repeated = true;
             }
 
-            window.native.keys[@intFromEnum(key)] = action;
+            window.keys[@intFromEnum(key)] = action;
 
             if (repeated)
                 action = .repeat;
@@ -517,8 +461,8 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
     return W32.DefWindowProcW(wind, msg, wp, lp);
 }
 
-fn applyWindowConstraints(config: *const Window.Config, edge: W32.WPARAM, rect: *W32.RECT) void {
-    _ = config;
+fn applyWindowConstraints(window: *const Window, edge: W32.WPARAM, rect: *W32.RECT) void {
+    _ = window;
     _ = edge;
     _ = rect;
 }
@@ -575,7 +519,7 @@ fn windowFlagsToNative(flags: Window.Flags) W32.DWORD {
 
     style |= W32.WS_SYSMENU | W32.WS_MINIMIZEBOX;
 
-    if (flags.no_decoration) {
+    if (flags.noDecoration) {
         style |= W32.WS_POPUP;
     } else {
         style |= W32.WS_CAPTION;
