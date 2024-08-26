@@ -42,7 +42,7 @@ ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library wi
 ZWL is very WIP, so expect bugs, inconsistencies and lack of support on certain platforms. If you wish you can help me by [contributing](#contributing) to this project via pull requests or filing issues.
 
 # Contributing
-Feel free to contribute to the library by making PRs or by filing issues. My machine is a windows one, so I'll prioritize my work on the Win32 implementation and linux (with WSL).
+Feel free to contribute to the library by making PRs or by filing issues. My machine is a windows one, so I'll prioritize my work (and might only work) on the Win32 implementation.
 
 ## Contributor Note
 - Constants are **CAPITAL_SNAKE_CASE**

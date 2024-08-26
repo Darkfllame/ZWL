@@ -28,7 +28,6 @@ pub const Error = FunctionLoaderError || error{
     OutOfMemory,
     InvalidUtf8,
     Win32,
-    Wayland,
     X11,
     Cocoa,
 };
@@ -206,4 +205,10 @@ pub fn MBpanic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, re
     zwl.deinit();
     if (ret) |_| {} else |_| {}
     std.builtin.default_panic(msg, error_return_trace, first_ret_addr);
+}
+
+comptime {
+    if (@sizeOf(c_int) != 4) {
+        @compileError("Bad target platform, c_int MUST be 32 bits");
+    }
 }

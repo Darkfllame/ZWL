@@ -2,4 +2,4 @@
 **/.zig-cache/
 **/zig-cache/
 **/zig-out/
-dependencies/
+x11_headers/

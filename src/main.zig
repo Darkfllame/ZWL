@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const ZWL = @import("zwl");
 const GL = @import("zgll").GL;
 
@@ -11,7 +12,7 @@ const TRIANGLE_VERTICES = [_]f32{
 };
 
 pub fn main() !void {
-    if (@import("builtin").os.tag == .windows) { // manually set console output mode for windows, because zig doesn't
+    if (builtin.os.tag == .windows) { // manually set console output mode for windows, because zig doesn't
         const W32 = opaque {
             pub const BOOL = c_int;
             pub const UINT = c_uint;
@@ -23,7 +24,7 @@ pub fn main() !void {
         _ = W32.SetConsoleOutputCP(W32.CP_UTF8);
     }
 
-    const DEBUG = @import("builtin").mode == .Debug;
+    const DEBUG = builtin.mode == .Debug;
     var gpa = if (DEBUG)
         std.heap.GeneralPurposeAllocator(.{}){}
     else {};
@@ -31,11 +32,15 @@ pub fn main() !void {
     const allocator = if (DEBUG) gpa.allocator() else std.heap.page_allocator;
 
     const zwl = try allocator.create(ZWL.Zwl);
+    zwl.* = undefined;
     defer allocator.destroy(zwl);
-    try zwl.init(allocator, .{});
+    zwl.init(allocator, .{}) catch |e| {
+        std.debug.print("[FATAL | {s}] {s}\n", .{ @errorName(e), zwl.getError() });
+        return e;
+    };
     defer zwl.deinit();
 
-    if (comptime @import("builtin").os.tag == .linux) return;
+    if (comptime builtin.os.tag == .linux) return;
 
     errdefer |e| {
         std.debug.print("[FATAL | {s}] {s}\n", .{ @errorName(e), zwl.getError() });
@@ -48,7 +53,7 @@ pub fn main() !void {
     });
     defer window.destroy();
 
-    if (comptime @import("builtin").os.tag == .linux) {
+    if (comptime builtin.os.tag == .linux) {
         std.time.sleep(std.time.ns_per_ms * 500);
 
         return;
@@ -138,4 +143,4 @@ pub fn main() !void {
     }
 }
 
-pub const panic = ZWL.MBpanic;
+// pub const panic = ZWL.MBpanic;

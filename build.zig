@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
     b.modules.put(b.dupe("zgll"), zgll) catch @panic("OOM");
 
     const config = b.addOptions();
-    addConfigOption(
+    _ = addConfigOption(
         b,
         config,
         usize,
@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) void {
         "The size (in bytes) for the error buffer",
         1024,
     );
-    addConfigOption(
+    _ = addConfigOption(
         b,
         config,
         []const u8,
@@ -32,27 +32,28 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     zwl.addImport("config", config.createModule());
+    zwl.addIncludePath(b.path("x11_headers/"));
 
     const exe = b.addExecutable(.{
         .name = "zwl-demo",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = false,
-        .strip = true,
+        .link_libc = true,
     });
     exe.root_module.addImport("zwl", zwl);
     exe.root_module.addImport("zgll", zgll);
     if (optimize != .Debug) {
         exe.subsystem = .Windows;
     }
+    exe.addIncludePath(b.path("x11_headers/"));
 
     const bootstrap_shared_dir = b.fmt("{s}/bootstrap_so", .{b.install_prefix});
     if (builtin.os.tag != target.result.os.tag) {
         zwl.addLibraryPath(.{ .cwd_relative = bootstrap_shared_dir });
     }
 
-    // Bootstrap shader libraries for
+    // Bootstrap shared libraries for
     // forein compilation
     switch (target.result.os.tag) {
         .windows => if (builtin.os.tag != .windows) {
@@ -82,11 +83,13 @@ fn addConfigOption(
     comptime name: []const u8,
     comptime description: []const u8,
     comptime default: T,
-) void {
-    config.addOption(T, name, b.option(T, name, std.fmt.comptimePrint(
+) T {
+    const v = b.option(T, name, std.fmt.comptimePrint(
         "{s} (default: " ++ (if (isString(T)) "\"{s}\"" else "{any}") ++ ")",
         .{ description, default },
-    )) orelse default);
+    )) orelse default;
+    config.addOption(T, name, v);
+    return v;
 }
 
 fn isString(comptime T: type) bool {
