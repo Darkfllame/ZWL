@@ -25,6 +25,14 @@ pub fn build(b: *std.Build) void {
         "A default error message that will be used by zwl.getError()",
         "No Error Message",
     );
+    _ = addConfigOption(
+        b,
+        config,
+        usize,
+        "EVENT_QUEUE_SIZE",
+        "The internal event queue size",
+        16,
+    );
 
     const zwl = b.addModule("zwl", .{
         .root_source_file = b.path("src/zwl.zig"),
@@ -32,21 +40,18 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     zwl.addImport("config", config.createModule());
-    zwl.addIncludePath(b.path("x11_headers/"));
 
     const exe = b.addExecutable(.{
         .name = "zwl-demo",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
     });
     exe.root_module.addImport("zwl", zwl);
     exe.root_module.addImport("zgll", zgll);
     if (optimize != .Debug) {
         exe.subsystem = .Windows;
     }
-    exe.addIncludePath(b.path("x11_headers/"));
 
     const bootstrap_shared_dir = b.fmt("{s}/bootstrap_so", .{b.install_prefix});
     if (builtin.os.tag != target.result.os.tag) {

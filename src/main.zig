@@ -12,16 +12,11 @@ const TRIANGLE_VERTICES = [_]f32{
 };
 
 pub fn main() !void {
-    if (builtin.os.tag == .windows) { // manually set console output mode for windows, because zig doesn't
-        const W32 = opaque {
-            pub const BOOL = c_int;
-            pub const UINT = c_uint;
-
-            pub const CP_UTF8: UINT = 65001;
-
-            pub extern "Kernel32" fn SetConsoleOutputCP(wCodePageID: UINT) BOOL;
-        };
-        _ = W32.SetConsoleOutputCP(W32.CP_UTF8);
+    if (builtin.os.tag == .windows) {
+        // manually set console output mode for windows, because zig doesn't
+        (opaque {
+            pub extern "Kernel32" fn SetConsoleOutputCP(wCodePageID: u32) i32;
+        }).SetConsoleOutputCP(65001);
     }
 
     const DEBUG = builtin.mode == .Debug;
@@ -32,19 +27,14 @@ pub fn main() !void {
     const allocator = if (DEBUG) gpa.allocator() else std.heap.page_allocator;
 
     const zwl = try allocator.create(ZWL.Zwl);
-    zwl.* = undefined;
     defer allocator.destroy(zwl);
-    zwl.init(allocator, .{}) catch |e| {
-        std.debug.print("[FATAL | {s}] {s}\n", .{ @errorName(e), zwl.getError() });
-        return e;
-    };
-    defer zwl.deinit();
-
-    if (comptime builtin.os.tag == .linux) return;
 
     errdefer |e| {
         std.debug.print("[FATAL | {s}] {s}\n", .{ @errorName(e), zwl.getError() });
     }
+
+    try zwl.init(allocator, .{});
+    defer zwl.deinit();
 
     const window = try zwl.createWindow(.{
         .title = "ZWL demo",
@@ -52,12 +42,6 @@ pub fn main() !void {
         .height = 600,
     });
     defer window.destroy();
-
-    if (comptime builtin.os.tag == .linux) {
-        std.time.sleep(std.time.ns_per_ms * 500);
-
-        return;
-    }
 
     const ctx = try window.createGLContext(.{
         .version = .{
@@ -143,4 +127,4 @@ pub fn main() !void {
     }
 }
 
-// pub const panic = ZWL.MBpanic;
+pub const panic = ZWL.MBpanic;

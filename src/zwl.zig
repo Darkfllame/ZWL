@@ -19,26 +19,17 @@ pub const Event = event.Event;
 pub const Key = event.Key;
 pub const GLContext = context.GLContext;
 
-pub const FunctionLoaderError = error{
-    LibraryNotFound,
-    FunctionNotFound,
-};
-
-pub const Error = FunctionLoaderError || error{
-    OutOfMemory,
-    InvalidUtf8,
-    Win32,
-    X11,
+pub const Error = error{
     Cocoa,
+    InvalidUtf8,
+    OutOfMemory,
+    QueueFull,
+    X11,
+    Wayland,
+    Win32,
 };
 
-pub const InitConfig = struct {
-    /// By default, the linux implementation will try to
-    /// use wayland first, this changes this behaviour to
-    /// try use X11 first, if not available, it'll try using
-    /// wayland.
-    linuxPreferX11: bool = false,
-};
+pub const InitConfig = struct {};
 
 pub const Zwl = struct {
     const global = struct {
@@ -52,16 +43,13 @@ pub const Zwl = struct {
     errorBuffer: [config.ERROR_BUFFER_SIZE]u8,
     errFormatBuffer: [config.ERROR_BUFFER_SIZE]u8,
     currentError: ?[]u8,
+    eventQueueSize: usize,
+    eventQueue: [config.EVENT_QUEUE_SIZE]Event,
     native: platform.NativeData,
 
     pub fn init(self: *Zwl, allocator: Allocator, iConfig: InitConfig) Error!void {
-        self.* = .{
-            .allocator = allocator,
-            .errorBuffer = [_]u8{0} ** config.ERROR_BUFFER_SIZE,
-            .errFormatBuffer = [_]u8{0} ** config.ERROR_BUFFER_SIZE,
-            .currentError = null,
-            .native = undefined,
-        };
+        @memset(std.mem.asBytes(self), 0);
+        self.allocator = allocator;
         comptime {
             if (@TypeOf(platform.setPlatform) != fn (*Platform) Error!void) {
                 @compileError("Expected platform.setPlatform to be 'fn (*Platform) Error!void'");
@@ -132,7 +120,7 @@ pub const Platform = struct {
         setMouseVisible: *const fn (*Window, bool) void,
     },
     event: struct {
-        pollEvent: *const fn (*Zwl, ?*Window) Error!?Event,
+        pollEvent: *const fn (*Zwl, ?*Window) Error!void,
     },
     glContext: struct {
         init: *const fn (*platform.GLContext, *Zwl, *Window, GLContext.Config) Error!void,
@@ -142,22 +130,6 @@ pub const Platform = struct {
         swapInterval: *const fn (*Zwl, u32) Error!void,
     },
 };
-
-pub const NativeFunction = struct {
-    name: [:0]const u8,
-    type: type,
-};
-
-pub fn checkNativeDecls(comptime T: type, comptime decls: []const NativeFunction) void {
-    for (decls) |rDecl| {
-        if (!@hasDecl(T, rDecl.name) and
-            @TypeOf(@field(T, rDecl.name)) == rDecl.type)
-        {
-            @compileError("Expected " ++ @typeName(T) ++ " to have \"" ++
-                rDecl.name ++ "\" field of type: " ++ @typeName(rDecl.type));
-        }
-    }
-}
 
 pub fn MBpanic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
     @setCold(true);

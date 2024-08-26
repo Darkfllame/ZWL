@@ -283,17 +283,22 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
     const window: *Window = @ptrCast(@alignCast(W32.GetPropW(wind, WND_PTR_PROP_NAME.ptr) orelse {
         return W32.DefWindowProcW(wind, msg, wp, lp);
     }));
+    const lib = window.owner;
 
     switch (msg) {
         W32.WM_CLOSE => {
-            event.polledEvent = Event{ .windowClosed = window };
+            event.queueEvent(lib, .{ .windowClosed = window }) catch |e| {
+                event.pollingError = e;
+            };
         },
         W32.WM_SIZE => {
-            event.polledEvent = Event{ .windowResized = .{
+            event.queueEvent(lib, .{ .windowResized = .{
                 .window = window,
                 .width = @truncate(@as(u64, @bitCast(lp)) & 0xFFFF),
                 .height = @truncate(@as(u64, @bitCast(lp >> 16)) & 0xFFFF),
-            } };
+            } }) catch |e| {
+                event.pollingError = e;
+            };
         },
         W32.WM_MOUSEMOVE => {
             const x: u16 = @truncate(@as(u64, @bitCast(lp)) & 0xFFFF);
@@ -301,13 +306,15 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
 
             const dx = @as(i16, @bitCast(x)) - @as(i16, @bitCast(window.mouse.lastX));
             const dy = @as(i16, @bitCast(y)) - @as(i16, @bitCast(window.mouse.lastY));
-            event.polledEvent = Event{ .mouseMoved = .{
+            event.queueEvent(lib, .{ .mouseMoved = .{
                 .window = window,
                 .x = x,
                 .y = y,
                 .dx = dx,
                 .dy = dy,
-            } };
+            } }) catch |e| {
+                event.pollingError = e;
+            };
 
             window.mouse.lastX = x;
             window.mouse.lastY = y;
@@ -420,39 +427,49 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
                 action = .repeat;
             //                               VK_SHIFT
             if (action == .release and wp == 0x10) {
-                event.polledEvent = Event{ .key = .{
+                event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = .left_shift,
                     .action = action,
                     .mods = mods,
-                } };
-                event.polledEvent2 = Event{ .key = .{
+                } }) catch |e| {
+                    event.pollingError = e;
+                };
+                event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = .right_shift,
                     .action = action,
                     .mods = mods,
-                } };
+                } }) catch |e| {
+                    event.pollingError = e;
+                };
                 //           VK_SNAPSHOT
             } else if (wp == 0x2C) {
-                event.polledEvent = Event{ .key = .{
+                event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = key,
                     .action = .press,
                     .mods = mods,
-                } };
-                event.polledEvent2 = Event{ .key = .{
+                } }) catch |e| {
+                    event.pollingError = e;
+                };
+                event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = key,
                     .action = .release,
                     .mods = mods,
-                } };
+                } }) catch |e| {
+                    event.pollingError = e;
+                };
             } else {
-                event.polledEvent = Event{ .key = .{
+                event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = key,
                     .action = action,
                     .mods = mods,
-                } };
+                } }) catch |e| {
+                    event.pollingError = e;
+                };
             }
         },
         else => {},

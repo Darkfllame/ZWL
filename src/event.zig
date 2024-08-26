@@ -37,5 +37,31 @@ pub const Event = union(enum) {
 };
 
 pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
-    return lib.platform.event.pollEvent(lib, opt_window);
+    return popQueue(lib) orelse {
+        try lib.platform.event.pollEvent(lib, opt_window);
+        return popQueue(lib);
+    };
+}
+
+fn popQueue(lib: *Zwl) ?Event {
+    if (lib.eventQueueSize > 0) {
+        const retItem = lib.eventQueue[0];
+        lib.eventQueueSize -= 1;
+        if (lib.eventQueueSize > 1) {
+            for (lib.eventQueue[1..lib.eventQueueSize], 0..) |item, i| {
+                lib.eventQueue[i] = item;
+            }
+        }
+        return retItem;
+    }
+    return null;
+}
+
+pub fn queueEvent(lib: *Zwl, event: Event) Error!void {
+    const newSize = lib.eventQueueSize + 1;
+    if (newSize > lib.eventQueue.len) {
+        return Error.QueueFull;
+    }
+    lib.eventQueue[newSize - 1] = event;
+    lib.eventQueueSize = newSize;
 }

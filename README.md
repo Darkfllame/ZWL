@@ -1,41 +1,32 @@
 # Zig Windowing Library
 ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library with loop-based event polling (like SDL) and aimed to be lightweight thanks to zig's conditional compilation.
 
-## Current state: ![](https://progress-bar.xyz/3?scale=17&suffix=/17)
+## Current state: ![](https://progress-bar.xyz/3?scale=12&suffix=/12)
 <details>
-  <summary><img src="https://progress-bar.xyz/3?scale=4&suffix=/4"/> Win32</summary>
+  <summary><img src="https://progress-bar.xyz/3?scale=3&suffix=/3"/> Win32</summary>
 
   - [x] Window
   - [x] Event
-  - ![](https://progress-bar.xyz/1?scale=2&suffix=/2) Context management
-    - [x] OpenGL
-    - [ ] Vulkan
+  - [x] OpenGL Context
 </details>
 <details>
-  <summary><img src="https://progress-bar.xyz/0?scale=8&suffix=/8"/> Linux</summary>
+  <summary><img src="https://progress-bar.xyz/0?scale=6&suffix=/6"/> Linux</summary>
   
-  - ![](https://progress-bar.xyz/0?scale=4&suffix=/4) x11
+  - ![](https://progress-bar.xyz/0?scale=3&suffix=/3) x11
     - [ ] Window
     - [ ] Event
-    - ![](https://progress-bar.xyz/0?scale=2&suffix=/2) Context management
-        - [ ] OpenGL
-        - [ ] Vulkan
-  - ![](https://progress-bar.xyz/0?scale=4&suffix=/4) wayland
+    - [ ] OpenGL Context
+  - ![](https://progress-bar.xyz/0?scale=3&suffix=/3) wayland
     - [ ] Window
     - [ ] Event
-    - ![](https://progress-bar.xyz/0?scale=2&suffix=/2) Context management
-        - [ ] OpenGL
-        - [ ] Vulkan
+    - [ ] OpenGL Context
 </details>
 <details>
-  <summary><img src="https://progress-bar.xyz/0?scale=5&suffix=/5"/> MacOS</summary>
+  <summary><img src="https://progress-bar.xyz/0?scale=3&suffix=/3"/> MacOS</summary>
 
   - [ ] Window
   - [ ] Event
-  - ![](https://progress-bar.xyz/0?scale=3&suffix=/3) Context management
-      - [ ] OpenGL
-      - [ ] Vulkan
-      - [ ] Metal
+  - [ ] OpenGL Context
 </details>
 
 ###

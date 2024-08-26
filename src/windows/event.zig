@@ -2,6 +2,7 @@ const std = @import("std");
 const ZWL = @import("../zwl.zig");
 const W32 = @import("w32.zig");
 const window = @import("window.zig");
+const event = @import("../event.zig");
 
 const Window = ZWL.Window;
 const Error = ZWL.Error;
@@ -9,16 +10,10 @@ const Event = ZWL.Event;
 const Zwl = ZWL.Zwl;
 const Key = ZWL.Key;
 
-pub var polledEvent: ?Event = null;
-pub var polledEvent2: ?Event = null;
+pub var pollingError: ?Error = null;
 
-pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
-    _ = lib;
-    if (polledEvent2) |pe2| {
-        polledEvent2 = null;
-        return pe2;
-    }
-    polledEvent = null;
+pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!void {
+    pollingError = null;
 
     var msg: W32.MSG = undefined;
 
@@ -30,14 +25,15 @@ pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
         W32.PM_REMOVE,
     ) != 0) {
         switch (msg.message) {
-            W32.WM_QUIT => return .{ .quit = msg.wParam },
+            W32.WM_QUIT => try queueEvent(lib, .{ .quit = msg.wParam }),
             else => {
                 _ = W32.TranslateMessage(&msg);
                 _ = W32.DispatchMessageW(&msg);
-                return polledEvent;
             },
         }
     }
+
+    if (pollingError) |pErr| return pErr;
 
     if (W32.GetActiveWindow()) |handle| {
         if (@as(?*Window, @ptrCast(@alignCast(W32.GetPropW(handle, window.WND_PTR_PROP_NAME.ptr))))) |wnd| {
@@ -59,15 +55,15 @@ pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {
                     continue;
                 }
 
-                return Event{ .key = .{
+                try queueEvent(lib, .{ .key = .{
                     .window = wnd,
                     .key = key,
                     .action = .release,
                     .mods = window.getKeyMods(),
-                } };
+                } });
             }
         }
     }
-
-    return null;
 }
+
+pub const queueEvent = event.queueEvent;
