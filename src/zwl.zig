@@ -133,6 +133,13 @@ pub const Platform = struct {
 
 pub fn MBpanic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
     @setCold(true);
+    const S = struct {
+        var inPanic: bool = false;
+    };
+    if (S.inPanic) {
+        std.builtin.default_panic("Panic in panic, aborting", error_return_trace, null);
+    }
+    S.inPanic = true;
     const first_ret_addr = ret_addr orelse @returnAddress();
 
     var text: [4096]u8 = undefined;

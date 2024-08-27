@@ -11,6 +11,8 @@ const TRIANGLE_VERTICES = [_]f32{
     0,    0.5,  0, 0, 1,
 };
 
+pub const panic = ZWL.MBpanic;
+
 pub fn main() !void {
     if (builtin.os.tag == .windows) {
         // manually set console output mode for windows, because zig doesn't
@@ -126,5 +128,3 @@ pub fn main() !void {
         try ctx.swapBuffers();
     }
 }
-
-pub const panic = ZWL.MBpanic;
