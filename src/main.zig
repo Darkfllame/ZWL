@@ -16,7 +16,7 @@ pub const panic = ZWL.MBpanic;
 pub fn main() !void {
     if (builtin.os.tag == .windows) {
         // manually set console output mode for windows, because zig doesn't
-        (opaque {
+        _ = (opaque {
             pub extern "Kernel32" fn SetConsoleOutputCP(wCodePageID: u32) i32;
         }).SetConsoleOutputCP(65001);
     }
