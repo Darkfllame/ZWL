@@ -292,13 +292,17 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
             };
         },
         W32.WM_SIZE => {
+            const width: u16 = @truncate(@as(u64, @bitCast(lp)) & 0xFFFF);
+            const height: u16 = @truncate(@as(u64, @bitCast(lp >> 16)) & 0xFFFF);
             event.queueEvent(lib, .{ .windowResized = .{
                 .window = window,
-                .width = @truncate(@as(u64, @bitCast(lp)) & 0xFFFF),
-                .height = @truncate(@as(u64, @bitCast(lp >> 16)) & 0xFFFF),
+                .width = width,
+                .height = height,
             } }) catch |e| {
                 event.pollingError = e;
             };
+            window.config.width = width;
+            window.config.height = height;
         },
         W32.WM_MOUSEMOVE => {
             const x: u16 = @truncate(@as(u64, @bitCast(lp)) & 0xFFFF);
@@ -359,7 +363,11 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
                 mmi.ptMaxTrackSize.y = @bitCast(sl.hmax.? + yoff);
             }
         },
-        W32.WM_KEYDOWN, W32.WM_KEYUP, W32.WM_SYSKEYDOWN, W32.WM_SYSKEYUP => blk: {
+        W32.WM_KEYDOWN, //
+        W32.WM_KEYUP,
+        W32.WM_SYSKEYDOWN,
+        W32.WM_SYSKEYUP,
+        => blk: {
             const lp_hiword = @as(u64, @bitCast(lp >> 16)) & 0xFFFF;
 
             var scancode: u32 = @truncate(lp_hiword & 0x01FF);
