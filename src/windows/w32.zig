@@ -568,6 +568,104 @@ pub const ERROR_INVALID_VERSION_ARB: DWORD = 0x2095;
 pub const ERROR_INVALID_PROFILE_ARB: DWORD = 0x2096;
 pub const ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB: DWORD = 0x2054;
 
+//#region System metrics
+pub const SM_ARRANGE: i32 = 56;
+pub const SM_CLEANBOOT: i32 = 67;
+pub const SM_CMONITORS: i32 = 80;
+pub const SM_CMOUSEBUTTONS: i32 = 43;
+pub const SM_CONVERTIBLESLATEMODE: i32 = 0x2003;
+pub const SM_CXBORDER: i32 = 5;
+pub const SM_CXCURSOR: i32 = 13;
+pub const SM_CXDLGFRAME: i32 = 7;
+pub const SM_CXDOUBLECLK: i32 = 36;
+pub const SM_CXDRAG: i32 = 68;
+pub const SM_CXEDGE: i32 = 45;
+pub const SM_CXFIXEDFRAME: i32 = 7;
+pub const SM_CXFOCUSBORDER: i32 = 83;
+pub const SM_CXFRAME: i32 = 32;
+pub const SM_CXFULLSCREEN: i32 = 16;
+pub const SM_CXHSCROLL: i32 = 21;
+pub const SM_CXHTHUMB: i32 = 10;
+pub const SM_CXICON: i32 = 11;
+pub const SM_CXICONSPACING: i32 = 38;
+pub const SM_CXMAXIMIZED: i32 = 61;
+pub const SM_CXMAXTRACK: i32 = 59;
+pub const SM_CXMENUCHECK: i32 = 71;
+pub const SM_CXMENUSIZE: i32 = 54;
+pub const SM_CXMIN: i32 = 28;
+pub const SM_CXMINIMIZED: i32 = 57;
+pub const SM_CXMINSPACING: i32 = 47;
+pub const SM_CXMINTRACK: i32 = 34;
+pub const SM_CXPADDEDBORDER: i32 = 92;
+pub const SM_CXSCREEN: i32 = 0;
+pub const SM_CXSIZE: i32 = 30;
+pub const SM_CXSIZEFRAME: i32 = 32;
+pub const SM_CXSMICON: i32 = 49;
+pub const SM_CXSMSIZE: i32 = 52;
+pub const SM_CXVIRTUALSCREEN: i32 = 78;
+pub const SM_CXVSCROLL: i32 = 2;
+pub const SM_CYBORDER: i32 = 6;
+pub const SM_CYCAPTION: i32 = 4;
+pub const SM_CYCURSOR: i32 = 14;
+pub const SM_CYDLGFRAME: i32 = 8;
+pub const SM_CYDOUBLECLK: i32 = 37;
+pub const SM_CYDRAG: i32 = 69;
+pub const SM_CYEDGE: i32 = 46;
+pub const SM_CYFIXEDFRAME: i32 = 8;
+pub const SM_CYFOCUSBORDER: i32 = 84;
+pub const SM_CYFRAME: i32 = 33;
+pub const SM_CYFULLSCREEN: i32 = 17;
+pub const SM_CYHSCROLL: i32 = 3;
+pub const SM_CYICON: i32 = 12;
+pub const SM_CYICONSPACING: i32 = 39;
+pub const SM_CYKANJIWINDOW: i32 = 18;
+pub const SM_CYMAXIMIZED: i32 = 62;
+pub const SM_CYMAXTRACK: i32 = 60;
+pub const SM_CYMENU: i32 = 15;
+pub const SM_CYMENUCHECK: i32 = 72;
+pub const SM_CYMENUSIZE: i32 = 55;
+pub const SM_CYMIN: i32 = 29;
+pub const SM_CYMINIMIZED: i32 = 58;
+pub const SM_CYMINSPACING: i32 = 48;
+pub const SM_CYMINTRACK: i32 = 35;
+pub const SM_CYSCREEN: i32 = 1;
+pub const SM_CYSIZE: i32 = 31;
+pub const SM_CYSIZEFRAME: i32 = 33;
+pub const SM_CYSMCAPTION: i32 = 51;
+pub const SM_CYSMICON: i32 = 50;
+pub const SM_CYSMSIZE: i32 = 53;
+pub const SM_CYVIRTUALSCREEN: i32 = 79;
+pub const SM_CYVSCROLL: i32 = 20;
+pub const SM_CYVTHUMB: i32 = 9;
+pub const SM_DBCSENABLED: i32 = 42;
+pub const SM_DEBUG: i32 = 22;
+pub const SM_DIGITIZER: i32 = 94;
+pub const SM_IMMENABLED: i32 = 82;
+pub const SM_MAXIMUMTOUCHES: i32 = 95;
+pub const SM_MEDIACENTER: i32 = 87;
+pub const SM_MENUDROPALIGNMENT: i32 = 40;
+pub const SM_MIDEASTENABLED: i32 = 74;
+pub const SM_MOUSEPRESENT: i32 = 19;
+pub const SM_MOUSEHORIZONTALWHEELPRESENT: i32 = 91;
+pub const SM_MOUSEWHEELPRESENT: i32 = 75;
+pub const SM_NETWORK: i32 = 63;
+pub const SM_PENWINDOWS: i32 = 41;
+pub const SM_REMOTECONTROL: i32 = 0x2001;
+pub const SM_REMOTESESSION: i32 = 0x1000;
+pub const SM_SAMEDISPLAYFORMAT: i32 = 81;
+pub const SM_SECURE: i32 = 44;
+pub const SM_SERVERR2: i32 = 89;
+pub const SM_SHOWSOUNDS: i32 = 70;
+pub const SM_SHUTTINGDOWN: i32 = 0x2000;
+pub const SM_SLOWMACHINE: i32 = 73;
+pub const SM_STARTER: i32 = 88;
+pub const SM_SWAPBUTTON: i32 = 23;
+pub const SM_SYSTEMDOCKED: i32 = 0x2004;
+pub const SM_TABLETPC: i32 = 86;
+pub const SM_XVIRTUALSCREEN: i32 = 76;
+pub const SM_YVIRTUALSCREEN: i32 = 77;
+//#endregion
+
 pub const WNDCLASSEXW = extern struct {
     cbSize: UINT = @sizeOf(WNDCLASSEXW),
     style: UINT,
@@ -729,6 +827,7 @@ pub extern "Kernel32" fn GetLastError() callconv(WINAPI) DWORD;
 //#endregion
 
 //#region User32
+pub extern "User32" fn GetSystemMetrics(nIndex: i32) callconv(WINAPI) i32;
 pub extern "User32" fn CreateWindowExW(
     dwExtStyle: DWORD,
     lpClassName: ?LPCWSTR,

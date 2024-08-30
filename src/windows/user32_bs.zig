@@ -1,5 +1,8 @@
 //! User32 bootstrap for forein compilation
 
+pub export fn GetSystemMetrics() noreturn {
+    @panic("Unexpected");
+}
 pub export fn CreateWindowExW() noreturn {
     @panic("Unexpected");
 }

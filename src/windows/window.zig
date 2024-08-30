@@ -21,6 +21,10 @@ const MAX_U32 = math.maxInt(u32);
 pub const NativeWindow = struct {
     handle: W32.HWND,
 
+    var barSizeSet = false;
+    var barW: i32 = 0;
+    var barH: i32 = 0;
+
     pub fn init(self: *NativeWindow, lib: *Zwl, config: Window.Config) Error!void {
         const window: *Window = @fieldParentPtr("native", self);
         self.* = .{
@@ -48,6 +52,15 @@ pub const NativeWindow = struct {
             break :blk flags;
         });
 
+        if (!barSizeSet) {
+            barW = W32.GetSystemMetrics(W32.SM_CXSIZEFRAME) +
+                W32.GetSystemMetrics(W32.SM_CXEDGE) * 2 + 10;
+            barH = W32.GetSystemMetrics(W32.SM_CYCAPTION) +
+                W32.GetSystemMetrics(W32.SM_CYSIZEFRAME) +
+                W32.GetSystemMetrics(W32.SM_CYEDGE) * 2 + 10;
+            barSizeSet = true;
+        }
+
         const handle = W32.CreateWindowExW(
             0,
             internal.WND_CLASS_NAME.ptr,
@@ -55,8 +68,8 @@ pub const NativeWindow = struct {
             style,
             @bitCast(config.x.toNumber(@bitCast(W32.CW_USEDEFAULT))),
             @bitCast(config.y.toNumber(@bitCast(W32.CW_USEDEFAULT))),
-            @bitCast(config.width),
-            @bitCast(config.height),
+            @as(i32, @intCast(config.width)) + barW,
+            @as(i32, @intCast(config.height)) + barH,
             null,
             null,
             lib.native.hInstance,
@@ -173,8 +186,8 @@ pub const NativeWindow = struct {
         var rect = W32.RECT{
             .left = 0,
             .top = 0,
-            .right = @intCast(w),
-            .bottom = @intCast(h),
+            .right = @as(i32, @intCast(w)) + barW,
+            .bottom = @as(i32, @intCast(h)) + barH,
         };
 
         _ = W32.AdjustWindowRectEx(
@@ -215,8 +228,8 @@ pub const NativeWindow = struct {
             window.native.handle,
             area.left,
             area.top,
-            area.right - area.left,
-            area.bottom - area.top,
+            area.right - area.left + barW,
+            area.bottom - area.top + barH,
             W32.TRUE,
         );
     }
@@ -505,8 +518,8 @@ fn getWindowFullsize(
     var rect: W32.RECT = .{
         .left = 0,
         .top = 0,
-        .right = @bitCast(contentWidth),
-        .bottom = @bitCast(contentHeight),
+        .right = @intCast(contentWidth),
+        .bottom = @intCast(contentHeight),
     };
 
     _ = W32.AdjustWindowRectEx(&rect, style, W32.FALSE, exStyle);
