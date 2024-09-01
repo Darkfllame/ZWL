@@ -19,6 +19,8 @@ pub fn main() !void {
         _ = (opaque {
             pub extern "Kernel32" fn SetConsoleOutputCP(wCodePageID: u32) i32;
         }).SetConsoleOutputCP(65001);
+    } else if (builtin.os.tag == .linux) {
+        return linuxMain();
     }
 
     const DEBUG = builtin.mode == .Debug;
@@ -127,4 +129,24 @@ pub fn main() !void {
 
         try ctx.swapBuffers();
     }
+}
+
+fn linuxMain() !void {
+    std.debug.print("Hello, World!\n", .{});
+    // const DEBUG = builtin.mode == .Debug;
+    // var gpa = if (DEBUG)
+    //     std.heap.GeneralPurposeAllocator(.{}){}
+    // else {};
+    // defer _ = if (DEBUG) gpa.deinit();
+    // const allocator = if (DEBUG) gpa.allocator() else std.heap.page_allocator;
+
+    // const zwl = try allocator.create(ZWL.Zwl);
+    // defer allocator.destroy(zwl);
+
+    // errdefer |e| {
+    //     std.debug.print("[FATAL | {s}] {s}\n", .{ @errorName(e), zwl.getError() });
+    // }
+
+    // try zwl.init(allocator, .{});
+    // defer zwl.deinit();
 }
