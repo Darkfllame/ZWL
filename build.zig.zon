@@ -4,8 +4,8 @@
 
     .dependencies = .{
         .zgll = .{
-            .url = "https://github.com/Darkfllame/zgll/archive/81b54cd3bbf94c368ef9dc45d7a840aa2e1d8bc6.tar.gz",
-            .hash = "122000604992615344b4565fe37dbb0b0d83fcecbd84090906fb78b1c13a0248bd15",
+            .url = "https://github.com/Darkfllame/zgll/archive/7715a4d8d6a64211cb63a0dfe90fcb642c53230a.tar.gz",
+            .hash = "1220d7fcade01fd8f77deb2330a63d23c75771a9d9727f02d3e32701d2783a62bba8",
         },
     },
 
