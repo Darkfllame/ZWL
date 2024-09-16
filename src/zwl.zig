@@ -99,6 +99,7 @@ pub const Zwl = struct {
     pub const pollEvent = event.pollEvent;
 
     pub const makeContextCurrent = GLContext.makeCurrent;
+    pub const swapInterval = GLContext.swapInterval;
 };
 
 pub const Platform = struct {
