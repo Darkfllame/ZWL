@@ -34,6 +34,7 @@ pub const Window = struct {
         noDecoration: bool = false,
         floating: bool = false,
         hideMouse: bool = false,
+        hasFocus: bool = false,
     };
 
     pub const Position = union(enum) {
@@ -140,6 +141,7 @@ pub const Window = struct {
     }
 
     pub fn destroy(self: *Window) void {
+        self.setMouseConfined(false);
         self.owner.platform.window.deinit(&self.native);
         self.owner.allocator.destroy(self);
     }
@@ -151,10 +153,7 @@ pub const Window = struct {
     }
     pub fn setPosition(self: *Window, x: u32, y: u32) void {
         if (self.lastX == x and
-            self.lastY == y)
-        {
-            return;
-        }
+            self.lastY == y) return;
         self.lastX = x;
         self.lastY = y;
         return self.owner.platform.window.setPosition(self, x, y);
@@ -165,10 +164,7 @@ pub const Window = struct {
     }
     pub fn setSize(self: *Window, w: u32, h: u32) void {
         if (self.config.width == w and
-            self.config.height == h)
-        {
-            return;
-        }
+            self.config.height == h) return;
 
         const sl = self.config.sizeLimits;
         const width = std.math.clamp(
@@ -237,15 +233,34 @@ pub const Window = struct {
         return self.owner.platform.window.isFocused(self);
     }
     pub fn setMousePos(self: *Window, x: u32, y: u32) void {
+        if (self.mouse.lastX == x and
+            self.mouse.lastY == y) return;
+        self.mouse = .{
+            .lastX = @intCast(x),
+            .lastY = @intCast(y),
+        };
         return self.owner.platform.window.setMousePos(self, x, y);
     }
     pub fn getMousePos(self: *Window, x: ?*u32, y: ?*u32) void {
         return self.owner.platform.window.getMousePos(self, x, y);
     }
     pub fn setMouseVisible(self: *Window, value: bool) void {
+        if (self.config.flags.hideMouse == !value) return;
+        self.config.flags.hideMouse = !value;
         return self.owner.platform.window.setMouseVisible(self, value);
     }
     pub fn getKey(self: *Window, key: Key) Key.Action {
         return self.keys[@intFromEnum(key)];
+    }
+    pub fn hasFocus(self: *Window) bool {
+        return self.config.flags.hasFocus;
+    }
+    pub fn setFocus(self: *Window) void {
+        if (self.config.flags.hasFocus) return;
+        self.config.flags.hasFocus = true;
+        self.owner.platform.window.setFocus(self);
+    }
+    pub fn setMouseConfined(self: *Window, value: bool) void {
+        self.owner.platform.window.setMouseConfined(self, value);
     }
 };

@@ -30,6 +30,12 @@ pub export fn SetPropW() noreturn {
 pub export fn GetActiveWindow() noreturn {
     @panic("Unexpected");
 }
+pub export fn SetActiveWindow() noreturn {
+    @panic("Unexpected");
+}
+pub export fn SetFocus() noreturn {
+    @panic("Unexpected");
+}
 pub export fn PeekMessageW() noreturn {
     @panic("Unexpected");
 }

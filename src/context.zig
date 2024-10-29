@@ -63,7 +63,7 @@ pub const GLContext = struct {
     pub fn swapBuffers(ctx: *GLContext) Error!void {
         return ctx.owner.owner.platform.glContext.swapBuffers(ctx);
     }
-    pub fn swapInterval(lib: *Zwl, interval: u32) Error!void {
+    pub fn swapInterval(lib: *Zwl, interval: i32) Error!void {
         return lib.platform.glContext.swapInterval(lib, interval);
     }
 };

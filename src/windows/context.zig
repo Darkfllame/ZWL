@@ -186,10 +186,9 @@ pub const GLContext = struct {
         _ = W32.SwapBuffers(ctx.native.dc);
     }
 
-    pub fn swapInterval(lib: *Zwl, interval: u32) Error!void {
-        std.debug.assert(@as(i32, @bitCast(interval)) >= 0);
+    pub fn swapInterval(lib: *Zwl, interval: i32) Error!void {
         if (lib.native.wglSwapIntervalEXT) |wglSwapIntervalEXT| {
-            if (wglSwapIntervalEXT(@bitCast(interval)) == 0) {
+            if (wglSwapIntervalEXT(interval) == 0) {
                 return lib.setError("Cannot find current context", .{}, Error.Win32);
             }
         } else {

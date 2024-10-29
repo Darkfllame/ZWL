@@ -850,6 +850,8 @@ pub extern "User32" fn LoadCursorW(hInstance: ?HINSTANCE, lpCursorName: LPCWSTR)
 pub extern "User32" fn GetPropW(hWnd: HWND, lpString: LPCWSTR) callconv(WINAPI) ?HANDLE;
 pub extern "User32" fn SetPropW(hWnd: HWND, lpString: LPCWSTR, hData: HANDLE) callconv(WINAPI) BOOL;
 pub extern "User32" fn GetActiveWindow() callconv(WINAPI) ?HWND;
+pub extern "User32" fn SetActiveWindow(hWnd: HWND) callconv(WINAPI) ?HWND;
+pub extern "User32" fn SetFocus(hWnd: ?HWND) callconv(WINAPI) ?HWND;
 pub extern "User32" fn PeekMessageW(
     lpMsg: *MSG,
     hWnd: ?HWND,

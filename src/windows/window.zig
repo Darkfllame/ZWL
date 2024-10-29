@@ -54,10 +54,10 @@ pub const NativeWindow = struct {
 
         if (!barSizeSet) {
             barW = W32.GetSystemMetrics(W32.SM_CXSIZEFRAME) +
-                W32.GetSystemMetrics(W32.SM_CXEDGE) * 2 + 10;
+                W32.GetSystemMetrics(W32.SM_CXEDGE) * 2 + 8;
             barH = W32.GetSystemMetrics(W32.SM_CYCAPTION) +
                 W32.GetSystemMetrics(W32.SM_CYSIZEFRAME) +
-                W32.GetSystemMetrics(W32.SM_CYEDGE) * 2 + 10;
+                W32.GetSystemMetrics(W32.SM_CYEDGE) * 2 + 8;
             barSizeSet = true;
         }
 
@@ -276,12 +276,7 @@ pub const NativeWindow = struct {
     }
 
     pub fn setMousePos(window: *Window, x: u32, y: u32) void {
-        if (window.mouse.lastX == x and window.mouse.lastY == y) {
-            return;
-        }
         var pos: W32.POINT = .{ .x = @bitCast(x), .y = @bitCast(y) };
-        window.mouse.lastX = @intCast(x);
-        window.mouse.lastX = @intCast(y);
         _ = W32.ClientToScreen(window.native.handle, &pos);
         _ = W32.SetCursorPos(pos.x, pos.y);
     }
@@ -290,30 +285,71 @@ pub const NativeWindow = struct {
         _ = window;
         _ = W32.ShowCursor(@intFromBool(value));
     }
+
+    pub fn setFocus(window: *Window) void {
+        _ = W32.SetFocus(window.native.handle);
+    }
+
+    pub fn setMouseConfined(window: *Window, value: bool) void {
+        if (value) {
+            var rect: W32.RECT = .{
+                .right = @intCast(window.config.width),
+                .bottom = @intCast(window.config.height),
+            };
+            _ = W32.ClientToScreen(window.native.handle, @ptrCast(&rect));
+            _ = W32.ClientToScreen(window.native.handle, @ptrCast(&rect.right));
+            _ = W32.ClipCursor(&rect);
+        } else {
+            _ = W32.ClipCursor(null);
+        }
+    }
+
+    pub fn freeMouse(window: *Window) void {
+        _ = window;
+        _ = W32.ClipCursor(null);
+    }
 };
 
 pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM) callconv(W32.CALLBACK) W32.LRESULT {
     const window: *Window = @ptrCast(@alignCast(W32.GetPropW(wind, WND_PTR_PROP_NAME.ptr) orelse {
         return W32.DefWindowProcW(wind, msg, wp, lp);
     }));
+
+    return windowProcInner(wind, window, msg, wp, lp) catch |e| blk: {
+        event.pollingError = e;
+        break :blk 1;
+    };
+}
+
+fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM) Error!W32.LRESULT {
     const lib = window.owner;
+
+    const S = struct {
+        fn buttonEvent(_lib: *Zwl, _window: *Window, button: u8, mods: u8, pressed: bool) Error!void {
+            try event.queueEvent(_lib, .{ .mouseButton = .{
+                .window = _window,
+                .clicked = pressed,
+                .button = button,
+                .mods = .{
+                    .control = mods & 0x08 != 0,
+                    .shift = mods & 0x04 != 0,
+                },
+            } });
+        }
+    };
 
     switch (msg) {
         W32.WM_CLOSE => {
-            event.queueEvent(lib, .{ .windowClosed = window }) catch |e| {
-                event.pollingError = e;
-            };
+            try event.queueEvent(lib, .{ .windowClosed = window });
         },
         W32.WM_SIZE => {
             const width: u16 = @truncate(@as(u64, @bitCast(lp)) & 0xFFFF);
             const height: u16 = @truncate(@as(u64, @bitCast(lp >> 16)) & 0xFFFF);
-            event.queueEvent(lib, .{ .windowResized = .{
+            try event.queueEvent(lib, .{ .windowResized = .{
                 .window = window,
                 .width = width,
                 .height = height,
-            } }) catch |e| {
-                event.pollingError = e;
-            };
+            } });
             window.config.width = width;
             window.config.height = height;
         },
@@ -323,18 +359,46 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
 
             const dx = @as(i16, @bitCast(x)) - @as(i16, @bitCast(window.mouse.lastX));
             const dy = @as(i16, @bitCast(y)) - @as(i16, @bitCast(window.mouse.lastY));
-            event.queueEvent(lib, .{ .mouseMoved = .{
+            try event.queueEvent(lib, .{ .mouseMoved = .{
                 .window = window,
                 .x = x,
                 .y = y,
                 .dx = dx,
                 .dy = dy,
-            } }) catch |e| {
-                event.pollingError = e;
-            };
+            } });
 
             window.mouse.lastX = x;
             window.mouse.lastY = y;
+        },
+        W32.WM_LBUTTONDOWN => try S.buttonEvent(lib, window, 0, @truncate(wp), true),
+        W32.WM_MBUTTONDOWN => try S.buttonEvent(lib, window, 1, @truncate(wp), true),
+        W32.WM_RBUTTONDOWN => try S.buttonEvent(lib, window, 2, @truncate(wp), true),
+        W32.WM_XBUTTONDOWN => try S.buttonEvent(lib, window, 3, @truncate(wp), true),
+        W32.WM_LBUTTONUP => try S.buttonEvent(lib, window, 0, @truncate(wp), false),
+        W32.WM_MBUTTONUP => try S.buttonEvent(lib, window, 1, @truncate(wp), false),
+        W32.WM_RBUTTONUP => try S.buttonEvent(lib, window, 2, @truncate(wp), false),
+        W32.WM_XBUTTONUP => try S.buttonEvent(lib, window, 3, @truncate(wp), false),
+        W32.WM_MOUSEWHEEL => {
+            try event.queueEvent(lib, .{ .mouseWheel = .{
+                .window = window,
+                .x = 0,
+                .y = @as(f32, @floatFromInt((wp >> 16) & 0xFFFF)) / 120,
+                .mods = .{
+                    .control = wp & 0x08 != 0,
+                    .shift = wp & 0x04 != 0,
+                },
+            } });
+        },
+        W32.WM_MOUSEHWHEEL => {
+            try event.queueEvent(lib, .{ .mouseWheel = .{
+                .window = window,
+                .x = @as(f32, @floatFromInt((wp >> 16) & 0xFFFF)) / 120,
+                .y = 0,
+                .mods = .{
+                    .control = wp & 0x08 != 0,
+                    .shift = wp & 0x04 != 0,
+                },
+            } });
         },
         W32.WM_SIZING => {
             const rect: *W32.RECT = @ptrFromInt(@as(u64, @bitCast(lp)));
@@ -448,50 +512,48 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
                 action = .repeat;
             //                               VK_SHIFT
             if (action == .release and wp == 0x10) {
-                event.queueEvent(lib, .{ .key = .{
+                try event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = .left_shift,
                     .action = action,
                     .mods = mods,
-                } }) catch |e| {
-                    event.pollingError = e;
-                };
-                event.queueEvent(lib, .{ .key = .{
+                } });
+                try event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = .right_shift,
                     .action = action,
                     .mods = mods,
-                } }) catch |e| {
-                    event.pollingError = e;
-                };
+                } });
                 //           VK_SNAPSHOT
             } else if (wp == 0x2C) {
-                event.queueEvent(lib, .{ .key = .{
+                try event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = key,
                     .action = .press,
                     .mods = mods,
-                } }) catch |e| {
-                    event.pollingError = e;
-                };
-                event.queueEvent(lib, .{ .key = .{
+                } });
+                try event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = key,
                     .action = .release,
                     .mods = mods,
-                } }) catch |e| {
-                    event.pollingError = e;
-                };
+                } });
             } else {
-                event.queueEvent(lib, .{ .key = .{
+                try event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = key,
                     .action = action,
                     .mods = mods,
-                } }) catch |e| {
-                    event.pollingError = e;
-                };
+                } });
             }
+        },
+        W32.WM_SETFOCUS, W32.WM_KILLFOCUS => {
+            const status = msg == W32.WM_SETFOCUS;
+            window.config.flags.hasFocus = status;
+            try event.queueEvent(lib, .{ .windowFocused = .{
+                .window = window,
+                .gained = status,
+            } });
         },
         else => {},
     }

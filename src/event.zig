@@ -11,6 +11,10 @@ const Zwl = ZWL.Zwl;
 pub const Event = union(enum) {
     quit: u64,
     windowClosed: *Window,
+    windowFocused: struct {
+        window: *Window,
+        gained: bool,
+    },
     windowResized: struct {
         window: *Window,
         width: u16,
@@ -28,12 +32,37 @@ pub const Event = union(enum) {
         dx: i16,
         dy: i16,
     },
+    mouseButton: struct {
+        window: *Window,
+        clicked: bool,
+        /// | value | button |
+        /// |-|-|
+        /// |1|left|
+        /// |2|middle|
+        /// |3|right|
+        /// |4|4th button|
+        /// |5|5th button|
+        /// and so on...
+        button: u8,
+        mods: EventMods,
+    },
+    mouseWheel: struct {
+        window: *Window,
+        x: f32,
+        y: f32,
+        mods: EventMods,
+    },
     key: struct {
         window: *Window,
         key: Key,
         action: Key.Action,
         mods: Key.Mods,
     },
+
+    pub const EventMods = packed struct {
+        control: bool,
+        shift: bool,
+    };
 };
 
 pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!?Event {

@@ -29,6 +29,8 @@ pub fn setPlatform(lib: *Platform) ZWL.Error!void {
             .getMousePos = &window.NativeWindow.getMousePos,
             .setMousePos = &window.NativeWindow.setMousePos,
             .setMouseVisible = &window.NativeWindow.setMouseVisible,
+            .setFocus = &window.NativeWindow.setFocus,
+            .setMouseConfined = &window.NativeWindow.setMouseConfined,
         },
         .event = .{
             .pollEvent = &event.pollEvent,

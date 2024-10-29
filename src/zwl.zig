@@ -119,6 +119,8 @@ pub const Platform = struct {
         getMousePos: *const fn (*Window, ?*u32, ?*u32) void,
         setMousePos: *const fn (*Window, u32, u32) void,
         setMouseVisible: *const fn (*Window, bool) void,
+        setFocus: *const fn (*Window) void,
+        setMouseConfined: *const fn (*Window, bool) void,
     },
     event: struct {
         pollEvent: *const fn (*Zwl, ?*Window) Error!void,
@@ -128,7 +130,7 @@ pub const Platform = struct {
         deinit: *const fn (*platform.GLContext) void,
         makeCurrent: *const fn (*Zwl, ?*GLContext) Error!void,
         swapBuffers: *const fn (*GLContext) Error!void,
-        swapInterval: *const fn (*Zwl, u32) Error!void,
+        swapInterval: *const fn (*Zwl, i32) Error!void,
     },
 };
 
