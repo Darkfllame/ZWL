@@ -1,5 +1,5 @@
 const std = @import("std");
-const ZWL = @import("../zwl.zig");
+const Zwl = @import("../zwl.zig");
 const W32 = @import("w32.zig");
 const window = @import("window.zig");
 const event = @import("event.zig");
@@ -8,18 +8,17 @@ const context = @import("context.zig");
 const unicode = std.unicode;
 const Allocator = std.mem.Allocator;
 
-const Platform = ZWL.Platform;
-const InitConfig = ZWL.InitConfig;
-const Error = ZWL.Error;
-const Key = ZWL.Key;
-const Zwl = ZWL.Zwl;
+const Platform = Zwl.Platform;
+const InitConfig = Zwl.InitConfig;
+const Error = Zwl.Error;
+const Key = Zwl.Key;
 
 var initCount: u32 = 0;
 
 pub const WND_CLASS_NAME = utf8ToUtf16Z(undefined, "ZWL_WND") catch unreachable;
 
 pub const KEYCODES: [512]Key = blk: {
-    var keycodes = std.mem.zeroes([512]Key);
+    var keycodes = [_]Key{.unkown} ** 512;
 
     keycodes[0x002] = .@"1";
     keycodes[0x003] = .@"2";
@@ -145,6 +144,15 @@ pub const KEYCODES: [512]Key = blk: {
 
     break :blk keycodes;
 };
+pub const SCANCODES: [@intFromEnum(Key.last)]u16 = blk: {
+    var res = [_]u16{0xFFFF} ** @intFromEnum(Key.last);
+    for (0..512) |scancode| {
+        if (KEYCODES[scancode] != .unkown) {
+            res[@intFromEnum(KEYCODES[scancode])] = scancode;
+        }
+    }
+    break :blk res;
+};
 
 pub const NativeData = struct {
     hInstance: W32.HINSTANCE,
@@ -156,6 +164,7 @@ pub const NativeData = struct {
     },
     wglCreateContextAttribsARB: ?*const fn (hDC: W32.HDC, hShareContext: ?W32.HGLRC, attribList: [*]const i32) callconv(W32.WINAPI) ?W32.HGLRC,
     wglSwapIntervalEXT: ?*const fn (interval: i32) callconv(W32.WINAPI) W32.BOOL,
+    keynames: [@intFromEnum(Key.last)][10:0]u8,
 };
 
 pub inline fn utf8ToUtf16(allocator: Allocator, utf8: []const u8) error{ InvalidUtf8, OutOfMemory }![]const u16 {
@@ -182,8 +191,50 @@ pub inline fn utf16ToUtf8Z(allocator: Allocator, utf16: []const u16) error{ Inva
     return unicode.utf16LeToUtf8AllocZ(allocator, utf16) catch error.InvalidUtf16;
 }
 
-pub fn init(lib: *Zwl, config: InitConfig) Error!void {
-    _ = config;
+pub fn updateKeyNames(native: *NativeData) void {
+    var state = [_]u8{0} ** 256;
+    @memset(&native.keynames, [_:0]u8{0} ** (@sizeOf(@TypeOf(native.keynames[0])) - 1));
+    for (@intFromEnum(Key.space)..@intFromEnum(Key.last)) |key_int| {
+        const scancode = SCANCODES[key_int];
+        if (scancode == 0xFFFF) continue;
+
+        const vks = [_]W32.UINT{ W32.VK_NUMPAD0, W32.VK_NUMPAD1, W32.VK_NUMPAD2, W32.VK_NUMPAD3, W32.VK_NUMPAD4, W32.VK_NUMPAD5, W32.VK_NUMPAD6, W32.VK_NUMPAD7, W32.VK_NUMPAD8, W32.VK_NUMPAD9, W32.VK_DECIMAL, W32.VK_DIVIDE, W32.VK_MULTIPLY, W32.VK_SUBTRACT, W32.VK_ADD };
+
+        const vk = if (key_int >= @intFromEnum(Key.kp_0) and key_int <= @intFromEnum(Key.kp_add))
+            vks[key_int - @intFromEnum(Key.kp_0)]
+        else
+            W32.MapVirtualKeyW(scancode, W32.MAPVK_VSC_TO_VK);
+
+        var chars: [16]u16 = undefined;
+        var length = W32.ToUnicode(
+            vk,
+            scancode,
+            &state,
+            @ptrCast(&chars),
+            chars.len,
+            0,
+        );
+        if (length == -1) {
+            length = W32.ToUnicode(
+                vk,
+                scancode,
+                &state,
+                @ptrCast(&chars),
+                chars.len + 1,
+                0,
+            );
+        }
+        if (length < 1) return;
+
+        const size = std.unicode.utf16LeToUtf8(
+            &native.keynames[key_int],
+            std.mem.span(@as([*:0]const u16, @ptrCast(&chars))),
+        ) catch continue;
+        native.keynames[key_int][size] = 0;
+    }
+}
+
+pub fn init(lib: *Zwl, _: InitConfig) Error!void {
     const native = &lib.native;
 
     const hInstance: W32.HINSTANCE = @ptrCast(W32.GetModuleHandleW(null));
@@ -242,6 +293,8 @@ pub fn init(lib: *Zwl, config: InitConfig) Error!void {
 
         _ = W32.wglMakeCurrent(dc, null);
     }
+
+    updateKeyNames(native);
 }
 
 pub fn deinit(lib: *Zwl) void {
@@ -251,4 +304,8 @@ pub fn deinit(lib: *Zwl) void {
     if (initCount == 0) {
         _ = W32.UnregisterClassW(WND_CLASS_NAME.ptr, lib.native.hInstance);
     }
+}
+
+pub fn keyName(lib: *const Zwl, key: Key) [:0]const u8 {
+    return std.mem.span(@as([*:0]const u8, @ptrCast(&lib.native.keynames[@intFromEnum(key)])));
 }

@@ -1,6 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const ZWL = @import("zwl");
+const Zwl = @import("zwl");
 const GL = @import("zgll").GL;
 
 const VERTEX_SHADER_SOURCE: []const u8 = @embedFile("demo.vert");
@@ -11,7 +11,7 @@ const TRIANGLE_VERTICES = [_]f32{
     0,    0.5,  0, 0, 1,
 };
 
-pub const panic = ZWL.MBpanic;
+// pub const panic = Zwl.MBpanic;
 
 pub fn main() !void {
     if (builtin.os.tag == .windows) {
@@ -30,7 +30,7 @@ pub fn main() !void {
     defer _ = if (DEBUG) gpa.deinit();
     const allocator = if (DEBUG) gpa.allocator() else std.heap.page_allocator;
 
-    const zwl = try allocator.create(ZWL.Zwl);
+    const zwl = try allocator.create(Zwl);
     defer allocator.destroy(zwl);
 
     errdefer |e| {
@@ -76,10 +76,10 @@ pub fn main() !void {
 
     gl.bufferData(GL.ARRAY_BUFFER, @sizeOf(@TypeOf(TRIANGLE_VERTICES)), &TRIANGLE_VERTICES, GL.STATIC_DRAW);
 
-    gl.vertexAttribPointer(0, 2, GL.FLOAT, false, @sizeOf(f32) * 5, @ptrFromInt(0));
+    gl.vertexAttribPointer(0, 2, GL.FLOAT, false, @sizeOf(f32) * 5, 0);
     gl.enableVertexArrayAttrib(VAO, 0);
 
-    gl.vertexAttribPointer(1, 3, GL.FLOAT, false, @sizeOf(f32) * 5, @ptrFromInt(@sizeOf(f32) * 2));
+    gl.vertexAttribPointer(1, 3, GL.FLOAT, false, @sizeOf(f32) * 5, @sizeOf(f32) * 2);
     gl.enableVertexArrayAttrib(VAO, 1);
 
     gl.bindBuffer(GL.ARRAY_BUFFER, 0);
@@ -112,6 +112,9 @@ pub fn main() !void {
         while (try zwl.pollEvent(null)) |event| {
             switch (event) {
                 .quit, .windowClosed => break :gameloop,
+                .key => |input| if (input.action == .press) {
+                    std.debug.print("key pressed: {s}\n", .{zwl.keyName(input.key)});
+                },
                 else => {},
             }
         }

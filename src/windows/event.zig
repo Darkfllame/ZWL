@@ -1,14 +1,13 @@
 const std = @import("std");
-const ZWL = @import("../zwl.zig");
+const Zwl = @import("../zwl.zig");
 const W32 = @import("w32.zig");
 const window = @import("window.zig");
 const event = @import("../event.zig");
 
-const Window = ZWL.Window;
-const Error = ZWL.Error;
-const Event = ZWL.Event;
-const Zwl = ZWL.Zwl;
-const Key = ZWL.Key;
+const Window = Zwl.Window;
+const Error = Zwl.Error;
+const Event = Zwl.Event;
+const Key = Zwl.Key;
 
 pub var pollingError: ?Error = null;
 
@@ -51,7 +50,7 @@ pub fn pollEvent(lib: *Zwl, opt_window: ?*Window) Error!void {
                 if (W32.GetKeyState(vk) & 0x8000 != 0) {
                     continue;
                 }
-                if (wnd.keys[@intFromEnum(key)] != .press) {
+                if (!wnd.keys[@intFromEnum(key)]) {
                     continue;
                 }
 

@@ -1,16 +1,15 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const config = @import("config");
-const ZWL = @import("zwl.zig");
+const Zwl = @import("zwl.zig");
 
-const Error = ZWL.Error;
-const Window = ZWL.Window;
-const Zwl = ZWL.Zwl;
+const Error = Zwl.Error;
+const Window = Zwl.Window;
 
 pub const GLContext = struct {
     owner: *Window,
     config: Config,
-    native: ZWL.platform.GLContext,
+    native: Zwl.platform.GLContext,
 
     pub const VersionAPI = enum(u2) {
         opengl,

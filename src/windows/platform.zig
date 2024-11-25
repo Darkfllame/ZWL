@@ -1,20 +1,21 @@
 const std = @import("std");
-const ZWL = @import("../zwl.zig");
+const Zwl = @import("../zwl.zig");
 const init = @import("init.zig");
 const window = @import("window.zig");
 const event = @import("event.zig");
 const context = @import("context.zig");
 
-const Platform = ZWL.Platform;
+const Platform = Zwl.Platform;
 
 pub const NativeData = init.NativeData;
 pub const Window = window.NativeWindow;
 pub const GLContext = context.GLContext;
 
-pub fn setPlatform(lib: *Platform) ZWL.Error!void {
+pub fn setPlatform(lib: *Platform) Zwl.Error!void {
     lib.* = .{
         .init = &init.init,
         .deinit = &init.deinit,
+        .keyName = &init.keyName,
         .window = .{
             .createMessageBox = &window.NativeWindow.createMessageBox,
             .init = &window.NativeWindow.init,

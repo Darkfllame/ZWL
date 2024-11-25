@@ -568,6 +568,177 @@ pub const ERROR_INVALID_VERSION_ARB: DWORD = 0x2095;
 pub const ERROR_INVALID_PROFILE_ARB: DWORD = 0x2096;
 pub const ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB: DWORD = 0x2054;
 
+pub const MAPVK_VK_TO_VSC: UINT = 0;
+pub const MAPVK_VSC_TO_VK: UINT = 1;
+pub const MAPVK_VK_TO_CHAR: UINT = 2;
+pub const MAPVK_VSC_TO_VK_EX: UINT = 3;
+
+//#region Virtual Keys
+pub const VK_LBUTTON: UINT = 0x01;
+pub const VK_RBUTTON: UINT = 0x02;
+pub const VK_CANCEL: UINT = 0x03;
+pub const VK_MBUTTON: UINT = 0x04;
+pub const VK_XBUTTON1: UINT = 0x05;
+pub const VK_XBUTTON2: UINT = 0x06;
+pub const VK_BACK: UINT = 0x08;
+pub const VK_TAB: UINT = 0x09;
+pub const VK_CLEAR: UINT = 0x0C;
+pub const VK_RETURN: UINT = 0x0D;
+pub const VK_SHIFT: UINT = 0x10;
+pub const VK_CONTROL: UINT = 0x11;
+pub const VK_MENU: UINT = 0x12;
+pub const VK_PAUSE: UINT = 0x13;
+pub const VK_CAPITAL: UINT = 0x14;
+pub const VK_KANA: UINT = 0x15;
+pub const VK_HANGEUL: UINT = 0x15;
+pub const VK_HANGUL: UINT = 0x15;
+pub const VK_IME_ON: UINT = 0x16;
+pub const VK_JUNJA: UINT = 0x17;
+pub const VK_FINAL: UINT = 0x18;
+pub const VK_HANJA: UINT = 0x19;
+pub const VK_KANJI: UINT = 0x19;
+pub const VK_IME_OFF: UINT = 0x1A;
+pub const VK_ESCAPE: UINT = 0x1B;
+pub const VK_CONVERT: UINT = 0x1C;
+pub const VK_NONCONVERT: UINT = 0x1D;
+pub const VK_ACCEPT: UINT = 0x1E;
+pub const VK_MODECHANGE: UINT = 0x1F;
+pub const VK_SPACE: UINT = 0x20;
+pub const VK_PRIOR: UINT = 0x21;
+pub const VK_NEXT: UINT = 0x22;
+pub const VK_END: UINT = 0x23;
+pub const VK_HOME: UINT = 0x24;
+pub const VK_LEFT: UINT = 0x25;
+pub const VK_UP: UINT = 0x26;
+pub const VK_RIGHT: UINT = 0x27;
+pub const VK_DOWN: UINT = 0x28;
+pub const VK_SELECT: UINT = 0x29;
+pub const VK_PRINT: UINT = 0x2A;
+pub const VK_EXECUTE: UINT = 0x2B;
+pub const VK_SNAPSHOT: UINT = 0x2C;
+pub const VK_INSERT: UINT = 0x2D;
+pub const VK_DELETE: UINT = 0x2E;
+pub const VK_HELP: UINT = 0x2F;
+
+pub const VK_LWIN: UINT = 0x5B;
+pub const VK_RWIN: UINT = 0x5C;
+pub const VK_APPS: UINT = 0x5D;
+pub const VK_SLEEP: UINT = 0x5F;
+pub const VK_NUMPAD0: UINT = 0x60;
+pub const VK_NUMPAD1: UINT = 0x61;
+pub const VK_NUMPAD2: UINT = 0x62;
+pub const VK_NUMPAD3: UINT = 0x63;
+pub const VK_NUMPAD4: UINT = 0x64;
+pub const VK_NUMPAD5: UINT = 0x65;
+pub const VK_NUMPAD6: UINT = 0x66;
+pub const VK_NUMPAD7: UINT = 0x67;
+pub const VK_NUMPAD8: UINT = 0x68;
+pub const VK_NUMPAD9: UINT = 0x69;
+pub const VK_MULTIPLY: UINT = 0x6A;
+pub const VK_ADD: UINT = 0x6B;
+pub const VK_SEPARATOR: UINT = 0x6C;
+pub const VK_SUBTRACT: UINT = 0x6D;
+pub const VK_DECIMAL: UINT = 0x6E;
+pub const VK_DIVIDE: UINT = 0x6F;
+pub const VK_F1: UINT = 0x70;
+pub const VK_F2: UINT = 0x71;
+pub const VK_F3: UINT = 0x72;
+pub const VK_F4: UINT = 0x73;
+pub const VK_F5: UINT = 0x74;
+pub const VK_F6: UINT = 0x75;
+pub const VK_F7: UINT = 0x76;
+pub const VK_F8: UINT = 0x77;
+pub const VK_F9: UINT = 0x78;
+pub const VK_F10: UINT = 0x79;
+pub const VK_F11: UINT = 0x7A;
+pub const VK_F12: UINT = 0x7B;
+pub const VK_F13: UINT = 0x7C;
+pub const VK_F14: UINT = 0x7D;
+pub const VK_F15: UINT = 0x7E;
+pub const VK_F16: UINT = 0x7F;
+pub const VK_F17: UINT = 0x80;
+pub const VK_F18: UINT = 0x81;
+pub const VK_F19: UINT = 0x82;
+pub const VK_F20: UINT = 0x83;
+pub const VK_F21: UINT = 0x84;
+pub const VK_F22: UINT = 0x85;
+pub const VK_F23: UINT = 0x86;
+pub const VK_F24: UINT = 0x87;
+pub const VK_NUMLOCK: UINT = 0x90;
+pub const VK_SCROLL: UINT = 0x91;
+pub const VK_OEM_NEC_EQUAL: UINT = 0x92;
+pub const VK_OEM_FJ_JISHO: UINT = 0x92;
+pub const VK_OEM_FJ_MASSHOU: UINT = 0x93;
+pub const VK_OEM_FJ_TOUROKU: UINT = 0x94;
+pub const VK_OEM_FJ_LOYA: UINT = 0x95;
+pub const VK_OEM_FJ_ROYA: UINT = 0x96;
+pub const VK_LSHIFT: UINT = 0xA0;
+pub const VK_RSHIFT: UINT = 0xA1;
+pub const VK_LCONTROL: UINT = 0xA2;
+pub const VK_RCONTROL: UINT = 0xA3;
+pub const VK_LMENU: UINT = 0xA4;
+pub const VK_RMENU: UINT = 0xA5;
+pub const VK_BROWSER_BACK: UINT = 0xA6;
+pub const VK_BROWSER_FORWARD: UINT = 0xA7;
+pub const VK_BROWSER_REFRESH: UINT = 0xA8;
+pub const VK_BROWSER_STOP: UINT = 0xA9;
+pub const VK_BROWSER_SEARCH: UINT = 0xAA;
+pub const VK_BROWSER_FAVORITES: UINT = 0xAB;
+pub const VK_BROWSER_HOME: UINT = 0xAC;
+pub const VK_VOLUME_MUTE: UINT = 0xAD;
+pub const VK_VOLUME_DOWN: UINT = 0xAE;
+pub const VK_VOLUME_UP: UINT = 0xAF;
+pub const VK_MEDIA_NEXT_TRACK: UINT = 0xB0;
+pub const VK_MEDIA_PREV_TRACK: UINT = 0xB1;
+pub const VK_MEDIA_STOP: UINT = 0xB2;
+pub const VK_MEDIA_PLAY_PAUSE: UINT = 0xB3;
+pub const VK_LAUNCH_MAIL: UINT = 0xB4;
+pub const VK_LAUNCH_MEDIA_SELECT: UINT = 0xB5;
+pub const VK_LAUNCH_APP1: UINT = 0xB6;
+pub const VK_LAUNCH_APP2: UINT = 0xB7;
+pub const VK_OEM_1: UINT = 0xBA;
+pub const VK_OEM_PLUS: UINT = 0xBB;
+pub const VK_OEM_COMMA: UINT = 0xBC;
+pub const VK_OEM_MINUS: UINT = 0xBD;
+pub const VK_OEM_PERIOD: UINT = 0xBE;
+pub const VK_OEM_2: UINT = 0xBF;
+pub const VK_OEM_3: UINT = 0xC0;
+pub const VK_OEM_4: UINT = 0xDB;
+pub const VK_OEM_5: UINT = 0xDC;
+pub const VK_OEM_6: UINT = 0xDD;
+pub const VK_OEM_7: UINT = 0xDE;
+pub const VK_OEM_8: UINT = 0xDF;
+pub const VK_OEM_AX: UINT = 0xE1;
+pub const VK_OEM_102: UINT = 0xE2;
+pub const VK_ICO_HELP: UINT = 0xE3;
+pub const VK_ICO_00: UINT = 0xE4;
+pub const VK_PROCESSKEY: UINT = 0xE5;
+pub const VK_ICO_CLEAR: UINT = 0xE6;
+pub const VK_PACKET: UINT = 0xE7;
+pub const VK_OEM_RESET: UINT = 0xE9;
+pub const VK_OEM_JUMP: UINT = 0xEA;
+pub const VK_OEM_PA1: UINT = 0xEB;
+pub const VK_OEM_PA2: UINT = 0xEC;
+pub const VK_OEM_PA3: UINT = 0xED;
+pub const VK_OEM_WSCTRL: UINT = 0xEE;
+pub const VK_OEM_CUSEL: UINT = 0xEF;
+pub const VK_OEM_ATTN: UINT = 0xF0;
+pub const VK_OEM_FINISH: UINT = 0xF1;
+pub const VK_OEM_COPY: UINT = 0xF2;
+pub const VK_OEM_AUTO: UINT = 0xF3;
+pub const VK_OEM_ENLW: UINT = 0xF4;
+pub const VK_OEM_BACKTAB: UINT = 0xF5;
+pub const VK_ATTN: UINT = 0xF6;
+pub const VK_CRSEL: UINT = 0xF7;
+pub const VK_EXSEL: UINT = 0xF8;
+pub const VK_EREOF: UINT = 0xF9;
+pub const VK_PLAY: UINT = 0xFA;
+pub const VK_ZOOM: UINT = 0xFB;
+pub const VK_NONAME: UINT = 0xFC;
+pub const VK_PA1: UINT = 0xFD;
+pub const VK_OEM_CLEAR: UINT = 0xFE;
+//#endregion
+
 //#region System metrics
 pub const SM_ARRANGE: i32 = 56;
 pub const SM_CLEANBOOT: i32 = 67;
@@ -828,20 +999,7 @@ pub extern "Kernel32" fn GetLastError() callconv(WINAPI) DWORD;
 
 //#region User32
 pub extern "User32" fn GetSystemMetrics(nIndex: i32) callconv(WINAPI) i32;
-pub extern "User32" fn CreateWindowExW(
-    dwExtStyle: DWORD,
-    lpClassName: ?LPCWSTR,
-    lpWindowName: ?LPCWSTR,
-    dwStyle: DWORD,
-    x: i32,
-    y: i32,
-    nWidth: i32,
-    nHeight: i32,
-    hWndParent: ?HWND,
-    hWndMenu: ?HWND,
-    hInstance: ?HINSTANCE,
-    lpParam: ?LPVOID,
-) callconv(WINAPI) ?HWND;
+pub extern "User32" fn CreateWindowExW(dwExtStyle: DWORD, lpClassName: ?LPCWSTR, lpWindowName: ?LPCWSTR, dwStyle: DWORD, x: i32, y: i32, nWidth: i32, nHeight: i32, hWndParent: ?HWND, hWndMenu: ?HWND, hInstance: ?HINSTANCE, lpParam: ?LPVOID) callconv(WINAPI) ?HWND;
 pub extern "User32" fn DestroyWindow(hWnd: HWND) callconv(WINAPI) BOOL;
 pub extern "User32" fn DefWindowProcW(hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM) callconv(WINAPI) LRESULT;
 pub extern "User32" fn RegisterClassExW(class: *const WNDCLASSEXW) callconv(WINAPI) ATOM;
@@ -852,27 +1010,13 @@ pub extern "User32" fn SetPropW(hWnd: HWND, lpString: LPCWSTR, hData: HANDLE) ca
 pub extern "User32" fn GetActiveWindow() callconv(WINAPI) ?HWND;
 pub extern "User32" fn SetActiveWindow(hWnd: HWND) callconv(WINAPI) ?HWND;
 pub extern "User32" fn SetFocus(hWnd: ?HWND) callconv(WINAPI) ?HWND;
-pub extern "User32" fn PeekMessageW(
-    lpMsg: *MSG,
-    hWnd: ?HWND,
-    wMsgFilterMin: UINT,
-    wMsgFilterMax: UINT,
-    wRemoveMsg: UINT,
-) callconv(WINAPI) BOOL;
+pub extern "User32" fn PeekMessageW(lpMsg: *MSG, hWnd: ?HWND, wMsgFilterMin: UINT, wMsgFilterMax: UINT, wRemoveMsg: UINT) callconv(WINAPI) BOOL;
 pub extern "User32" fn TranslateMessage(lpMsg: *const MSG) callconv(WINAPI) BOOL;
 pub extern "User32" fn DispatchMessageW(lpMsg: *const MSG) callconv(WINAPI) LRESULT;
 pub extern "User32" fn ClientToScreen(hWnd: HWND, lpPoint: *POINT) callconv(WINAPI) BOOL;
 pub extern "User32" fn AdjustWindowRectEx(lpRect: *RECT, dwStyle: DWORD, bMenu: BOOL, dwExStyle: DWORD) BOOL;
 pub extern "User32" fn GetClientRect(hWnd: HWND, lprect: *RECT) callconv(WINAPI) BOOL;
-pub extern "User32" fn SetWindowPos(
-    hWnd: HWND,
-    hWndInsertAfter: ?HWND,
-    X: i32,
-    Y: i32,
-    cx: i32,
-    cy: i32,
-    uFlags: UINT,
-) callconv(WINAPI) BOOL;
+pub extern "User32" fn SetWindowPos(hWnd: HWND, hWndInsertAfter: ?HWND, X: i32, Y: i32, cx: i32, cy: i32, uFlags: UINT) callconv(WINAPI) BOOL;
 pub extern "User32" fn GetDC(hWnd: HWND) callconv(WINAPI) ?HDC;
 pub extern "User32" fn ShowWindow(hWnd: HWND, nCmdShow: i32) callconv(WINAPI) BOOL;
 pub extern "User32" fn SetWindowTextW(hWnd: HWND, lpString: ?LPCWSTR) callconv(WINAPI) BOOL;
@@ -892,15 +1036,11 @@ pub extern "User32" fn GetKeyState(nVirtKey: i32) callconv(WINAPI) SHORT;
 pub extern "User32" fn MapVirtualKeyW(uCode: UINT, uMapType: UINT) callconv(WINAPI) UINT;
 pub extern "User32" fn GetMessageTime() callconv(WINAPI) LONG;
 pub extern "User32" fn MessageBoxW(hWnd: ?HWND, lpText: ?LPCWSTR, lpCaption: ?LPCWSTR, uType: UINT) callconv(WINAPI) i32;
+pub extern "User32" fn ToUnicode(wVirtKey: UINT, wScanCode: UINT, lpKeyState: ?*const [256]BYTE, pwszBuff: LPWSTR, cchBuff: i32, wFlags: UINT) callconv(WINAPI) i32;
 //#endregion
 
 //#region Comctl32
-pub extern "Comctl32" fn TaskDialogIndirect(
-    pTaskConfig: *const TASKDIALOGCONFIG,
-    pnButton: ?*i32,
-    pnRadioButton: ?*i32,
-    pfVerificationFlagChecked: ?*BOOL,
-) callconv(WINAPI) HRESULT;
+pub extern "Comctl32" fn TaskDialogIndirect(pTaskConfig: *const TASKDIALOGCONFIG, pnButton: ?*i32, pnRadioButton: ?*i32, pfVerificationFlagChecked: ?*BOOL) callconv(WINAPI) HRESULT;
 //#endregion
 
 //#region Opengl32

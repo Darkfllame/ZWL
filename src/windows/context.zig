@@ -1,16 +1,11 @@
 const std = @import("std");
-const ZWL = @import("../zwl.zig");
+const Zwl = @import("../zwl.zig");
 const internal = @import("init.zig");
 const W32 = @import("w32.zig");
 
-const Window = ZWL.Window;
-const Error = ZWL.Error;
-const Event = ZWL.Event;
-const Zwl = ZWL.Zwl;
-
-const USER32 = @TypeOf(@as(internal.NativeData, undefined).user32.funcs);
-const OPENGL32 = @TypeOf(@as(internal.NativeData, undefined).opengl32.funcs);
-const GDI32 = @TypeOf(@as(internal.NativeData, undefined).gdi32.funcs);
+const Window = Zwl.Window;
+const Error = Zwl.Error;
+const Event = Zwl.Event;
 
 pub const PFD = W32.PIXELFORMATDESCRIPTOR{
     .nVersion = 1,
@@ -32,7 +27,7 @@ pub const GLContext = struct {
     handle: W32.HGLRC,
     interval: i32,
 
-    pub fn init(self: *GLContext, lib: *Zwl, window: *Window, config: ZWL.GLContext.Config) Error!void {
+    pub fn init(self: *GLContext, lib: *Zwl, window: *Window, config: Zwl.GLContext.Config) Error!void {
         const dc = W32.GetDC(window.native.handle) orelse {
             return lib.setError("Cannot get device context from window", .{}, Error.Win32);
         };
@@ -103,7 +98,7 @@ pub const GLContext = struct {
                 @ptrCast(&attribs),
             ) orelse {
                 switch (W32.GetLastError()) {
-                    @as(i32, @bitCast(@as(u32, 0xc0070000))) | W32.ERROR_INVALID_VERSION_ARB => {
+                    @as(i32, @truncate(0xc0070000)) | W32.ERROR_INVALID_VERSION_ARB => {
                         if (config.version.api == .opengl) {
                             return lib.setError(
                                 "Driver does not support OpenGL {d}.{d}",
@@ -118,14 +113,14 @@ pub const GLContext = struct {
                             );
                         }
                     },
-                    @as(i32, @bitCast(@as(u32, 0xc0070000))) | W32.ERROR_INVALID_PROFILE_ARB => {
+                    @as(i32, @truncate(0xc0070000)) | W32.ERROR_INVALID_PROFILE_ARB => {
                         return lib.setError(
                             "Driver does not support requested OpenGL profile",
                             .{},
                             Error.Win32,
                         );
                     },
-                    @as(i32, @bitCast(@as(u32, 0xc0070000))) | W32.ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB => {
+                    @as(i32, @truncate(0xc0070000)) | W32.ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB => {
                         return lib.setError(
                             "The share context is not compatible with the requested context",
                             .{},
@@ -135,13 +130,13 @@ pub const GLContext = struct {
                     else => {
                         if (config.version.api == .opengl) {
                             return lib.setError(
-                                "Failed t ocreate OpenGL context",
+                                "Failed to create OpenGL context",
                                 .{},
                                 Error.Win32,
                             );
                         } else {
                             return lib.setError(
-                                "Failed t ocreate OpenGL ES context",
+                                "Failed to create OpenGL ES context",
                                 .{},
                                 Error.Win32,
                             );
@@ -171,7 +166,7 @@ pub const GLContext = struct {
         _ = W32.wglDeleteContext(self.handle);
     }
 
-    pub fn makeCurrent(lib: *Zwl, opt_ctx: ?*ZWL.GLContext) Error!void {
+    pub fn makeCurrent(lib: *Zwl, opt_ctx: ?*Zwl.GLContext) Error!void {
         _ = lib;
         currentContext = null;
         if (opt_ctx) |ctx| {
@@ -182,7 +177,7 @@ pub const GLContext = struct {
         } else _ = W32.wglMakeCurrent(undefined, null);
     }
 
-    pub fn swapBuffers(ctx: *ZWL.GLContext) Error!void {
+    pub fn swapBuffers(ctx: *Zwl.GLContext) Error!void {
         _ = W32.SwapBuffers(ctx.native.dc);
     }
 

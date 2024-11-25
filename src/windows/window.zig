@@ -1,5 +1,5 @@
 const std = @import("std");
-const ZWL = @import("../zwl.zig");
+const Zwl = @import("../zwl.zig");
 const internal = @import("init.zig");
 const W32 = @import("w32.zig");
 const event = @import("event.zig");
@@ -8,11 +8,10 @@ const assert = std.debug.assert;
 const math = std.math;
 const clamp = math.clamp;
 
-const Error = ZWL.Error;
-const Window = ZWL.Window;
-const Zwl = ZWL.Zwl;
-const Event = ZWL.Event;
-const Key = ZWL.Key;
+const Error = Zwl.Error;
+const Window = Zwl.Window;
+const Event = Zwl.Event;
+const Key = Zwl.Key;
 
 pub const WND_PTR_PROP_NAME = internal.utf8ToUtf16Z(undefined, "ZWL") catch unreachable;
 
@@ -324,20 +323,6 @@ pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM)
 fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM) Error!W32.LRESULT {
     const lib = window.owner;
 
-    const S = struct {
-        fn buttonEvent(_lib: *Zwl, _window: *Window, button: u8, mods: u8, pressed: bool) Error!void {
-            try event.queueEvent(_lib, .{ .mouseButton = .{
-                .window = _window,
-                .clicked = pressed,
-                .button = button,
-                .mods = .{
-                    .control = mods & 0x08 != 0,
-                    .shift = mods & 0x04 != 0,
-                },
-            } });
-        }
-    };
-
     switch (msg) {
         W32.WM_CLOSE => {
             try event.queueEvent(lib, .{ .windowClosed = window });
@@ -370,14 +355,39 @@ fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARA
             window.mouse.lastX = x;
             window.mouse.lastY = y;
         },
-        W32.WM_LBUTTONDOWN => try S.buttonEvent(lib, window, 0, @truncate(wp), true),
-        W32.WM_MBUTTONDOWN => try S.buttonEvent(lib, window, 1, @truncate(wp), true),
-        W32.WM_RBUTTONDOWN => try S.buttonEvent(lib, window, 2, @truncate(wp), true),
-        W32.WM_XBUTTONDOWN => try S.buttonEvent(lib, window, 3, @truncate(wp), true),
-        W32.WM_LBUTTONUP => try S.buttonEvent(lib, window, 0, @truncate(wp), false),
-        W32.WM_MBUTTONUP => try S.buttonEvent(lib, window, 1, @truncate(wp), false),
-        W32.WM_RBUTTONUP => try S.buttonEvent(lib, window, 2, @truncate(wp), false),
-        W32.WM_XBUTTONUP => try S.buttonEvent(lib, window, 3, @truncate(wp), false),
+        W32.WM_LBUTTONDOWN,
+        W32.WM_LBUTTONUP,
+        W32.WM_RBUTTONDOWN,
+        W32.WM_RBUTTONUP,
+        W32.WM_MBUTTONDOWN,
+        W32.WM_MBUTTONUP,
+        W32.WM_XBUTTONDOWN,
+        W32.WM_XBUTTONUP,
+        => {
+            const button: u8 = switch (msg) {
+                W32.WM_LBUTTONDOWN, W32.WM_LBUTTONUP => 0,
+                W32.WM_RBUTTONDOWN, W32.WM_RBUTTONUP => 2,
+                W32.WM_MBUTTONDOWN, W32.WM_MBUTTONUP => 1,
+                W32.WM_XBUTTONDOWN, W32.WM_XBUTTONUP => @truncate(((wp >> 16) & 0xFFFF) + 2),
+                else => unreachable,
+            };
+            const pressed: bool = switch (msg) {
+                W32.WM_LBUTTONDOWN, W32.WM_RBUTTONDOWN, W32.WM_MBUTTONDOWN, W32.WM_XBUTTONDOWN => true,
+                W32.WM_LBUTTONUP, W32.WM_RBUTTONUP, W32.WM_MBUTTONUP, W32.WM_XBUTTONUP => false,
+                else => unreachable,
+            };
+            const mods = getKeyMods();
+            window.mouseButtons[button] = pressed;
+            try event.queueEvent(lib, .{ .mouseButton = .{
+                .window = window,
+                .clicked = pressed,
+                .button = button,
+                .mods = .{
+                    .control = mods.control,
+                    .shift = mods.shift,
+                },
+            } });
+        },
         W32.WM_MOUSEWHEEL => {
             try event.queueEvent(lib, .{ .mouseWheel = .{
                 .window = window,
@@ -399,10 +409,6 @@ fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARA
                     .shift = wp & 0x04 != 0,
                 },
             } });
-        },
-        W32.WM_SIZING => {
-            const rect: *W32.RECT = @ptrFromInt(@as(u64, @bitCast(lp)));
-            applyWindowConstraints(window, wp, rect);
         },
         W32.WM_GETMINMAXINFO => {
             if (!window.config.flags.resizable) {
@@ -428,19 +434,20 @@ fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARA
                 dpi,
             );
 
-            if (sl.wmax != null and sl.hmax != null) {
-                @setRuntimeSafety(false);
-                mmi.ptMinTrackSize.x = @bitCast(sl.wmin.? + xoff);
-                mmi.ptMinTrackSize.y = @bitCast(sl.hmin.? + yoff);
+            if (sl.wmin) |wmin| {
+                mmi.ptMinTrackSize.x = @bitCast(wmin + xoff);
             }
-
-            if (sl.wmax != null and sl.hmax != null) {
-                @setRuntimeSafety(false);
-                mmi.ptMaxTrackSize.x = @bitCast(sl.wmax.? + xoff);
-                mmi.ptMaxTrackSize.y = @bitCast(sl.hmax.? + yoff);
+            if (sl.wmax) |wmax| {
+                mmi.ptMinTrackSize.x = @bitCast(wmax + xoff);
+            }
+            if (sl.hmin) |hmin| {
+                mmi.ptMinTrackSize.y = @bitCast(hmin + yoff);
+            }
+            if (sl.hmax) |hmax| {
+                mmi.ptMinTrackSize.y = @bitCast(hmax + yoff);
             }
         },
-        W32.WM_KEYDOWN, //
+        W32.WM_KEYDOWN,
         W32.WM_KEYUP,
         W32.WM_SYSKEYDOWN,
         W32.WM_SYSKEYUP,
@@ -467,8 +474,7 @@ fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARA
 
             var key = internal.KEYCODES[scancode];
 
-            //  wp == VK_CONTROL
-            if (wp == 0x11) {
+            if (wp == W32.VK_CONTROL) {
                 if (lp_hiword & 0x0100 != 0) {
                     key = .right_control;
                 } else {
@@ -492,26 +498,25 @@ fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARA
 
                     key = .left_control;
                 }
-            } else if (wp == 0xE5) {
+            } else if (wp == W32.VK_PROCESSKEY) {
                 break :blk;
             }
 
             var repeated: bool = false;
 
-            if (action == .release and window.keys[@intFromEnum(key)] == .release) {
+            if (action == .release and !window.keys[@intFromEnum(key)]) {
                 break :blk;
             }
 
-            if (action == .press and window.keys[@intFromEnum(key)] == .press) {
+            if (action == .press and window.keys[@intFromEnum(key)]) {
                 repeated = true;
             }
 
-            window.keys[@intFromEnum(key)] = action;
+            window.keys[@intFromEnum(key)] = action == .press;
 
             if (repeated)
                 action = .repeat;
-            //                               VK_SHIFT
-            if (action == .release and wp == 0x10) {
+            if (action == .release and wp == W32.VK_SHIFT) {
                 try event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = .left_shift,
@@ -524,8 +529,7 @@ fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARA
                     .action = action,
                     .mods = mods,
                 } });
-                //           VK_SNAPSHOT
-            } else if (wp == 0x2C) {
+            } else if (wp == W32.VK_SNAPSHOT) {
                 try event.queueEvent(lib, .{ .key = .{
                     .window = window,
                     .key = key,
@@ -555,18 +559,14 @@ fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARA
                 .gained = status,
             } });
         },
+        W32.WM_INPUTLANGCHANGE => {
+            internal.updateKeyNames(&lib.native);
+        },
         else => {},
     }
 
     return W32.DefWindowProcW(wind, msg, wp, lp);
 }
-
-fn applyWindowConstraints(window: *const Window, edge: W32.WPARAM, rect: *W32.RECT) void {
-    _ = window;
-    _ = edge;
-    _ = rect;
-}
-
 fn getWindowFullsize(
     style: W32.DWORD,
     exStyle: W32.DWORD,

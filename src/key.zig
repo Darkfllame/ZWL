@@ -14,7 +14,7 @@ pub const Key = enum(u16) {
         numLock: bool = false,
     };
 
-    unkown,
+    unkown = 0xFFFF,
     space = 32,
     apostrophe = 39,
     comma = 44,
@@ -135,4 +135,7 @@ pub const Key = enum(u16) {
     right_alt = 346,
     right_super = 347,
     menu = 348,
+    /// Isn't used except to get the
+    /// `Window.keys` size
+    last = 349,
 };

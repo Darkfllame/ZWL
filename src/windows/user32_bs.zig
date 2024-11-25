@@ -114,3 +114,6 @@ pub export fn GetMessageTime() noreturn {
 pub export fn MessageBoxW() noreturn {
     @panic("Unexpected");
 }
+pub export fn ToUniform() noreturn {
+    @panic("Unexpected");
+}

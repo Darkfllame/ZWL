@@ -1,14 +1,13 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const config = @import("config");
-const ZWL = @import("zwl.zig");
+const Zwl = @import("zwl.zig");
 
 const Allocator = std.mem.Allocator;
 
-const Key = ZWL.Key;
-const Error = ZWL.Error;
-const GLContext = ZWL.GLContext;
-const Zwl = ZWL.Zwl;
+const Key = Zwl.Key;
+const Error = Zwl.Error;
+const GLContext = Zwl.GLContext;
 
 const MAX_U32 = std.math.maxInt(u32);
 
@@ -21,8 +20,9 @@ pub const Window = struct {
     } = .{},
     lastY: u16 = 0,
     lastX: u16 = 0,
-    keys: [@intFromEnum(Key.menu) + 1]Key.Action = std.mem.zeroes([@intFromEnum(Key.menu) + 1]Key.Action),
-    native: ZWL.platform.Window,
+    keys: [@intFromEnum(Key.last)]bool = std.mem.zeroes([@intFromEnum(Key.last)]bool),
+    mouseButtons: [5]bool = [_]bool{false} ** 5,
+    native: Zwl.platform.Window,
 
     pub const Flags = packed struct {
         /// Note:
@@ -249,7 +249,7 @@ pub const Window = struct {
         self.config.flags.hideMouse = !value;
         return self.owner.platform.window.setMouseVisible(self, value);
     }
-    pub fn getKey(self: *Window, key: Key) Key.Action {
+    pub fn getKey(self: *Window, key: Key) bool {
         return self.keys[@intFromEnum(key)];
     }
     pub fn hasFocus(self: *Window) bool {
@@ -262,5 +262,8 @@ pub const Window = struct {
     }
     pub fn setMouseConfined(self: *Window, value: bool) void {
         self.owner.platform.window.setMouseConfined(self, value);
+    }
+    pub fn getButton(self: *Window, button: u8) bool {
+        return button < self.mouseButtons.len and self.mouseButtons[button];
     }
 };

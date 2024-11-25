@@ -31,80 +31,85 @@ pub const Error = error{
 
 pub const InitConfig = struct {};
 
-pub const Zwl = struct {
-    const global = struct {
-        var initialized: bool = false;
-        var gPlatform: Platform = undefined;
+const Zwl = @This();
+const global = struct {
+    var initialized: bool = false;
+    var gPlatform: Platform = undefined;
+};
+
+comptime platform: *Platform = &global.gPlatform,
+
+allocator: Allocator,
+errorBuffer: [config.ERROR_BUFFER_SIZE]u8,
+errFormatBuffer: [config.ERROR_BUFFER_SIZE]u8,
+currentError: ?[]u8,
+eventQueueSize: usize,
+eventQueue: [config.EVENT_QUEUE_SIZE]Event,
+native: platform.NativeData,
+
+pub fn init(self: *Zwl, allocator: Allocator, iConfig: InitConfig) Error!void {
+    @memset(std.mem.asBytes(self), 0);
+    self.allocator = allocator;
+    comptime {
+        if (@TypeOf(platform.setPlatform) != fn (*Platform) Error!void) {
+            @compileError("Expected platform.setPlatform to be 'fn (*Platform) Error!void'");
+        }
+    }
+    // Platform won't change during runtime lmao
+    if (!global.initialized) {
+        try platform.setPlatform(self.platform);
+    }
+    try self.platform.init(self, iConfig);
+}
+pub fn deinit(self: *Zwl) void {
+    self.platform.deinit(self);
+}
+
+pub fn clearError(self: *Zwl) void {
+    self.currentError = null;
+}
+pub fn getError(self: *const Zwl) []const u8 {
+    return self.currentError orelse config.DEFAULT_ERROR_MESSAGE;
+}
+pub fn setError(self: *Zwl, comptime fmt: []const u8, args: anytype, err: anytype) @TypeOf(err) {
+    if (@typeInfo(@TypeOf(err)) != .ErrorSet) {
+        @compileError("'err' must be an error");
+    }
+
+    self.clearError();
+
+    const formatted = std.fmt.bufPrint(&self.errFormatBuffer, fmt, args) catch blk: {
+        const TRUNC_MESSAGE = " (truncated)";
+        @memcpy(
+            self.errFormatBuffer[self.errFormatBuffer.len - TRUNC_MESSAGE.len ..],
+            TRUNC_MESSAGE,
+        );
+        break :blk &self.errFormatBuffer;
     };
 
-    comptime platform: *Platform = &global.gPlatform,
+    self.currentError = self.errorBuffer[0..formatted.len];
 
-    allocator: Allocator,
-    errorBuffer: [config.ERROR_BUFFER_SIZE]u8,
-    errFormatBuffer: [config.ERROR_BUFFER_SIZE]u8,
-    currentError: ?[]u8,
-    eventQueueSize: usize,
-    eventQueue: [config.EVENT_QUEUE_SIZE]Event,
-    native: platform.NativeData,
+    @memcpy(self.currentError.?, formatted);
 
-    pub fn init(self: *Zwl, allocator: Allocator, iConfig: InitConfig) Error!void {
-        @memset(std.mem.asBytes(self), 0);
-        self.allocator = allocator;
-        comptime {
-            if (@TypeOf(platform.setPlatform) != fn (*Platform) Error!void) {
-                @compileError("Expected platform.setPlatform to be 'fn (*Platform) Error!void'");
-            }
-        }
-        if (!global.initialized) {
-            try platform.setPlatform(self.platform);
-        }
-        try self.platform.init(self, iConfig);
-    }
-    pub fn deinit(self: *Zwl) void {
-        self.platform.deinit(self);
-    }
+    return err;
+}
 
-    pub fn clearError(self: *Zwl) void {
-        self.currentError = null;
-    }
-    pub fn getError(self: *const Zwl) []const u8 {
-        return self.currentError orelse config.DEFAULT_ERROR_MESSAGE;
-    }
-    pub fn setError(self: *Zwl, comptime fmt: []const u8, args: anytype, err: anytype) @TypeOf(err) {
-        if (@typeInfo(@TypeOf(err)) != .ErrorSet) {
-            @compileError("'err' must be an error");
-        }
+pub fn keyName(self: *const Zwl, key: Key) ?[:0]const u8 {
+    return self.platform.keyName(self, key);
+}
 
-        self.clearError();
+pub const createWindow = Window.create;
+pub const createMessageBox = Window.createMessageBox;
 
-        const formatted = std.fmt.bufPrint(&self.errFormatBuffer, fmt, args) catch blk: {
-            const TRUNC_MESSAGE = " (truncated)";
-            @memcpy(
-                self.errFormatBuffer[self.errFormatBuffer.len - TRUNC_MESSAGE.len ..],
-                TRUNC_MESSAGE,
-            );
-            break :blk &self.errFormatBuffer;
-        };
+pub const pollEvent = event.pollEvent;
 
-        self.currentError = self.errorBuffer[0..formatted.len];
-
-        @memcpy(self.currentError.?, formatted);
-
-        return err;
-    }
-
-    pub const createWindow = Window.create;
-    pub const createMessageBox = Window.createMessageBox;
-
-    pub const pollEvent = event.pollEvent;
-
-    pub const makeContextCurrent = GLContext.makeCurrent;
-    pub const swapInterval = GLContext.swapInterval;
-};
+pub const makeContextCurrent = GLContext.makeCurrent;
+pub const swapInterval = GLContext.swapInterval;
 
 pub const Platform = struct {
     init: *const fn (*Zwl, InitConfig) Error!void,
     deinit: *const fn (*Zwl) void,
+    keyName: *const fn (*const Zwl, Key) [:0]const u8,
     window: struct {
         createMessageBox: *const fn (*Zwl, Window.MBConfig) Error!Window.MBButton,
         init: *const fn (*platform.Window, *Zwl, Window.Config) Error!void,

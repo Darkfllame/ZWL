@@ -1,12 +1,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const config = @import("config");
-const ZWL = @import("zwl.zig");
+const Zwl = @import("zwl.zig");
 pub const Key = @import("key.zig").Key;
 
-const Error = ZWL.Error;
-const Window = ZWL.Window;
-const Zwl = ZWL.Zwl;
+const Error = Zwl.Error;
+const Window = Zwl.Window;
 
 pub const Event = union(enum) {
     quit: u64,
