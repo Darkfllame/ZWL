@@ -307,6 +307,10 @@ pub const NativeWindow = struct {
         _ = window;
         _ = W32.ClipCursor(null);
     }
+
+    pub fn getDC(window: *NativeWindow) ?W32.HDC {
+        return W32.GetDC(window.handle);
+    }
 };
 
 pub fn windowProc(wind: W32.HWND, msg: W32.UINT, wp: W32.WPARAM, lp: W32.LPARAM) callconv(W32.CALLBACK) W32.LRESULT {
