@@ -35,7 +35,7 @@ pub fn build(b: *std.Build) void {
     );
 
     const zwl = b.addModule("zwl", .{
-        .root_source_file = b.path("src/zwl.zig"),
+        .root_source_file = b.path("src/Zwl.zig"),
         .target = target,
         .optimize = optimize,
     });

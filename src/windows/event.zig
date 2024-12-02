@@ -1,5 +1,5 @@
 const std = @import("std");
-const Zwl = @import("../zwl.zig");
+const Zwl = @import("../Zwl.zig");
 const W32 = @import("w32.zig");
 const window = @import("window.zig");
 const event = @import("../event.zig");

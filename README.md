@@ -1,28 +1,28 @@
 # Zig Windowing Library
 ZWL (Zig Windowing Library, /zwil/) is a cross-platform zig windowing library with loop-based event polling (like SDL) and aimed to be lightweight thanks to zig's conditional compilation/lazy evaluation.
 
-## Current state: ![](https://progress-bar.xyz/3?scale=12&suffix=/12)
+## Current state: ![](https://progress-bar.xyz/3?scale=12&show_text=false&title=3/12)
 <details>
-  <summary><img src="https://progress-bar.xyz/3?scale=3&suffix=/3"/> Win32</summary>
+  <summary>Win32 <img src="https://progress-bar.xyz/3?scale=3&show_text=false&title=3/3"/></summary>
 
   - [x] Window
   - [x] Event
   - [x] OpenGL Context
 </details>
 <details>
-  <summary><img src="https://progress-bar.xyz/0?scale=6&suffix=/6"/> Linux</summary>
+  <summary>Linux <img src="https://progress-bar.xyz/0?scale=6&show_text=false&title=0/6"/></summary>
   
-  - ![](https://progress-bar.xyz/0?scale=3&suffix=/3) x11
+  - X11 ![](https://progress-bar.xyz/0?scale=3&show_text=false&title=0/3)
     - [ ] Window
     - [ ] Event
     - [ ] OpenGL Context
-  - ![](https://progress-bar.xyz/0?scale=3&suffix=/3) wayland
+  - Wayland ![](https://progress-bar.xyz/0?scale=3&show_text=false&title=0/3)
     - [ ] Window
     - [ ] Event
     - [ ] OpenGL Context
 </details>
 <details>
-  <summary><img src="https://progress-bar.xyz/0?scale=3&suffix=/3"/> MacOS</summary>
+  <summary>MacOS <img src="https://progress-bar.xyz/0?scale=3&show_text=false&title=0/3"/></summary>
 
   - [ ] Window
   - [ ] Event

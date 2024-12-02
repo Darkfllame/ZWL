@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const config = @import("config");
-const Zwl = @import("zwl.zig");
+const Zwl = @import("Zwl.zig");
 pub const Key = @import("key.zig").Key;
 
 const Error = Zwl.Error;
