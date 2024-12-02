@@ -113,7 +113,7 @@ pub fn main() !void {
             switch (event) {
                 .quit, .windowClosed => break :gameloop,
                 .key => |input| if (input.action == .press) {
-                    std.debug.print("key pressed: {s}\n", .{zwl.keyName(input.key)});
+                    std.debug.print("key pressed: {s}\n", .{zwl.keyName(input.key) orelse @tagName(input.key)});
                 },
                 else => {},
             }
