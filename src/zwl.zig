@@ -32,12 +32,11 @@ pub const Error = error{
 pub const InitConfig = struct {};
 
 const Zwl = @This();
-const global = struct {
-    var initialized: bool = false;
-    var gPlatform: Platform = undefined;
-};
 
-comptime platform: *Platform = &global.gPlatform,
+comptime platform: Platform = if (@hasDecl(platform, "platform") and @TypeOf(platform.platform) == Platform)
+    platform.platform
+else
+    @compileError("Expected platform.setPlatform to be 'fn (*Platform) Error!void'"),
 
 allocator: Allocator,
 errorBuffer: [config.ERROR_BUFFER_SIZE]u8,
@@ -50,15 +49,6 @@ native: platform.NativeData,
 pub fn init(self: *Zwl, allocator: Allocator, iConfig: InitConfig) Error!void {
     @memset(std.mem.asBytes(self), 0);
     self.allocator = allocator;
-    comptime {
-        if (@TypeOf(platform.setPlatform) != fn (*Platform) Error!void) {
-            @compileError("Expected platform.setPlatform to be 'fn (*Platform) Error!void'");
-        }
-    }
-    // Platform won't change during runtime lmao
-    if (!global.initialized) {
-        try platform.setPlatform(self.platform);
-    }
     try self.platform.init(self, iConfig);
 }
 pub fn deinit(self: *Zwl) void {
