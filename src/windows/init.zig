@@ -162,7 +162,8 @@ pub const NativeData = struct {
         dc: W32.HDC,
         glrc: W32.HGLRC,
     },
-    wglCreateContextAttribsARB: ?*const fn (hDC: W32.HDC, hShareContext: ?W32.HGLRC, attribList: [*]const i32) callconv(W32.WINAPI) ?W32.HGLRC,
+    wglCreateContextAttribsARB: ?*const fn (hDC: W32.HDC, hShareContext: ?W32.HGLRC, attribList: [*:.{0,0}]const [2]i32) callconv(W32.WINAPI) ?W32.HGLRC,
+    wglChoosePixelFormatARB: ?*const fn (hDC: W32.HDC, piAttribIList: ?[*:.{0,0}]const [2]i32, pfAttribFList: ?[*]const f32, nMaxFormats: u32, piFormats: [*]i32, nNumFormats: *u32) callconv(W32.WINAPI) W32.BOOL,
     wglSwapIntervalEXT: ?*const fn (interval: i32) callconv(W32.WINAPI) W32.BOOL,
     keynames: [@intFromEnum(Key.last)][10:0]u8,
 };
@@ -289,9 +290,10 @@ pub fn init(lib: *Zwl, _: InitConfig) Error!void {
         _ = W32.wglMakeCurrent(dc, glrc);
 
         native.wglCreateContextAttribsARB = @ptrCast(W32.wglGetProcAddress("wglCreateContextAttribsARB"));
+        native.wglChoosePixelFormatARB = @ptrCast(W32.wglGetProcAddress("wglChoosePixelFormatARB"));
         native.wglSwapIntervalEXT = @ptrCast(W32.wglGetProcAddress("wglSwapIntervalEXT"));
 
-        _ = W32.wglMakeCurrent(dc, null);
+        _ = W32.wglMakeCurrent(undefined, null);
     }
 
     updateKeyNames(native);

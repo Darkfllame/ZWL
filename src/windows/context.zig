@@ -33,8 +33,43 @@ pub const GLContext = struct {
         };
         self.dc = dc;
 
-        if (W32.SetPixelFormat(dc, W32.ChoosePixelFormat(dc, &PFD), &PFD) == 0) {
-            return lib.setError("Cannot set pixel format for device context", .{}, Error.Win32);
+        const format: i32 = if (@as(u56, @bitCast(config.pixelFormat)) != 0) blk: {
+            if (lib.native.wglChoosePixelFormatARB) |wglChoosePixelFormatARB| {
+                const attribs = [_:.{ 0, 0 }][2]i32{
+                    .{ W32.WGL_DRAW_TO_WINDOW_ARB, 1 },
+                    .{ W32.WGL_SUPPORT_OPENGL_ARB, 1 },
+                    .{ W32.WGL_DOUBLE_BUFFER_ARB, 1 },
+                    .{ W32.WGL_PIXEL_TYPE_ARB, W32.WGL_TYPE_RGBA_ARB },
+                    .{ W32.WGL_COLOR_BITS_ARB, 24 },
+                    .{ W32.WGL_RED_BITS_ARB, config.pixelFormat.redBits },
+                    .{ W32.WGL_GREEN_BITS_ARB, config.pixelFormat.greenBits },
+                    .{ W32.WGL_BLUE_BITS_ARB, config.pixelFormat.blueBits },
+                    .{ W32.WGL_ALPHA_BITS_ARB, config.pixelFormat.alphaBits },
+                    .{ W32.WGL_STENCIL_BITS_ARB, config.pixelFormat.stencilBits },
+                    .{ W32.WGL_DEPTH_BITS_ARB, config.pixelFormat.depthBits },
+                    .{ W32.WGL_SAMPLE_BUFFERS_ARB, 1 },
+                    .{ W32.WGL_SAMPLES_ARB, config.pixelFormat.samples },
+                };
+                var nFormats: u32 = undefined;
+                var result: i32 = undefined;
+                if (wglChoosePixelFormatARB(
+                    dc,
+                    &attribs,
+                    null,
+                    1,
+                    @ptrCast(&result),
+                    &nFormats,
+                ) == 0) {
+                    return lib.setError("Cannot find suitable pixel format", .{}, Error.Win32);
+                }
+                break :blk result;
+            } else {
+                return lib.setError("wglChoosePixelFormatARB unavailable while requested specific pixel format", .{}, Error.Win32);
+            }
+        } else W32.ChoosePixelFormat(dc, &PFD);
+
+        if (W32.SetPixelFormat(dc, format, &PFD) == 0) {
+            return lib.setError("Cannot set pixel format for device context: {d}", .{W32.GetLastError()}, Error.Win32);
         }
 
         if (config.version.api == .opengl and lib.native.wglCreateContextAttribsARB == null) {
@@ -49,7 +84,7 @@ pub const GLContext = struct {
         }
 
         if (lib.native.wglCreateContextAttribsARB) |wglCreateContextAttribsARB| {
-            var attribs: [10][2]i32 = undefined;
+            var attribs: [4:.{ 0, 0 }][2]i32 = undefined;
             var index: u32 = 0;
             var mask: u32 = 0;
             var flags: u32 = 0;
@@ -89,8 +124,6 @@ pub const GLContext = struct {
                 attribs[index] = .{ W32.WGL_CONTEXT_PROFILE_MASK_ARB, @bitCast(mask) };
                 index += 1;
             }
-
-            attribs[index] = .{ 0, 0 };
 
             self.handle = wglCreateContextAttribsARB(
                 dc,

@@ -142,6 +142,7 @@ pub const Window = struct {
 
     pub fn destroy(self: *Window) void {
         self.setMouseConfined(false);
+        self.owner.allocator.free(self.config.title);
         self.owner.platform.window.deinit(&self.native);
         self.owner.allocator.destroy(self);
     }

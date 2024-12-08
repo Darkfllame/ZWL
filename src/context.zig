@@ -31,6 +31,23 @@ pub const GLContext = struct {
         forward: bool = false,
         profile: OpenGLProfile = .any,
         share: ?*GLContext = null,
+        pixelFormat: PixelFormat = .{},
+    };
+    pub const PixelFormat = packed struct(u56) {
+        /// 0 means default
+        redBits: u8 = 0,
+        /// 0 means default
+        greenBits: u8 = 0,
+        /// 0 means default
+        blueBits: u8 = 0,
+        /// 0 means default
+        alphaBits: u8 = 0,
+        /// 0 means default
+        depthBits: u8 = 0,
+        /// 0 means default
+        stencilBits: u8 = 0,
+        /// 0 means default
+        samples: u8 = 0,
     };
 
     pub fn create(window: *Window, ctxConfig: Config) Error!*GLContext {

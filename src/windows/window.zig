@@ -19,6 +19,7 @@ const MAX_U32 = math.maxInt(u32);
 
 pub const NativeWindow = struct {
     handle: W32.HWND,
+    dc: W32.HDC,
 
     var barSizeSet = false;
     var barW: i32 = 0;
@@ -26,9 +27,6 @@ pub const NativeWindow = struct {
 
     pub fn init(self: *NativeWindow, lib: *Zwl, config: Window.Config) Error!void {
         const window: *Window = @fieldParentPtr("native", self);
-        self.* = .{
-            .handle = undefined,
-        };
         var aa = std.heap.ArenaAllocator.init(window.owner.allocator);
         defer _ = aa.reset(.free_all);
         const arena = aa.allocator();
@@ -83,13 +81,15 @@ pub const NativeWindow = struct {
         }
 
         self.handle = handle;
+        self.dc = W32.GetDC(handle) orelse {
+            return lib.setError("Cannot retreive window's device context", .{}, Error.Win32);
+        };
 
         window.setMouseVisible(!config.flags.hideMouse);
     }
 
     pub fn deinit(self: *NativeWindow) void {
-        const window: *Window = @fieldParentPtr("native", self);
-        window.owner.allocator.free(window.config.title);
+        _ = W32.ReleaseDC(self.handle, self.dc);
         _ = W32.DestroyWindow(self.handle);
     }
 
@@ -249,13 +249,10 @@ pub const NativeWindow = struct {
     }
 
     pub fn setTitle(window: *Window, title: []const u8) Error!void {
-        var aa = std.heap.ArenaAllocator.init(window.owner.allocator);
-        defer _ = aa.reset(.free_all);
-        const arena = aa.allocator();
-
-        const wideTitle = internal.utf8ToUtf16Z(arena, title) catch |e| {
+        const wideTitle = internal.utf8ToUtf16Z(window.owner.allocator, title) catch |e| {
             return window.owner.setError("Cannot create wide title for Win32", .{}, e);
         };
+        defer window.owner.allocator.free(wideTitle);
 
         _ = W32.SetWindowTextW(window.native.handle, wideTitle.ptr);
     }

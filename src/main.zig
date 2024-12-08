@@ -47,7 +47,8 @@ pub fn main() !void {
     });
     defer window.destroy();
 
-    const ctx = try window.createGLContext(.{
+    const ctx = try window.createGLContext(Zwl.GLContext.Config{
+        .pixelFormat = .{ .samples = 8 },
         .version = .{
             .major = 3,
             .minor = 2,
@@ -108,6 +109,7 @@ pub fn main() !void {
     }
 
     gl.viewport(0, 0, 800, 600);
+    gl.enable(GL.MULTISAMPLE);
     gameloop: while (true) {
         while (try zwl.pollEvent(null)) |event| {
             switch (event) {
