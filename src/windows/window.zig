@@ -47,7 +47,12 @@ pub const NativeWindow = struct {
         const style = windowFlagsToNative(realFlags);
         const exStyle = windowFlagsToExNative(config.flags);
 
-        const width, const height = getWindowFullsize(style, exStyle, config.width);
+        const width, const height = getWindowFullsize(
+            style,
+            exStyle,
+            config.width,
+            config.height,
+        );
 
         const handle = W32.CreateWindowExW(
             exStyle,
@@ -214,7 +219,7 @@ pub const NativeWindow = struct {
         var area: W32.RECT = undefined;
 
         _ = W32.GetWindowRect(window.native.handle, &area);
-        
+
         _ = W32.MoveWindow(
             window.native.handle,
             area.left,
@@ -412,19 +417,14 @@ fn windowProcInner(wind: W32.HWND, window: *Window, msg: W32.UINT, wp: W32.WPARA
             const config = window.config;
             const sl = config.sizeLimits;
 
-            var xoff: u32 = undefined;
-            var yoff: u32 = undefined;
             //                  USER_DEFAULT_SCREEN_DPI
-            const dpi: W32.UINT = 96;
+            // const dpi: W32.UINT = 96;
 
-            getWindowFullsize(
+            const xoff, const yoff = getWindowFullsize(
                 windowFlagsToNative(window.config.flags),
                 windowFlagsToExNative(window.config.flags),
                 0,
                 0,
-                &xoff,
-                &yoff,
-                dpi,
             );
 
             if (sl.wmin) |wmin| {
