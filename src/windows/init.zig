@@ -9,7 +9,6 @@ const unicode = std.unicode;
 const Allocator = std.mem.Allocator;
 
 const Platform = Zwl.Platform;
-const InitConfig = Zwl.InitConfig;
 const Error = Zwl.Error;
 const Key = Zwl.Key;
 
@@ -235,7 +234,7 @@ pub fn updateKeyNames(native: *NativeData) void {
     }
 }
 
-pub fn init(lib: *Zwl, _: InitConfig) Error!void {
+pub fn init(lib: *Zwl, _: Zwl.Config) Error!void {
     const native = &lib.native;
 
     const hInstance: W32.HINSTANCE = @ptrCast(W32.GetModuleHandleW(null));

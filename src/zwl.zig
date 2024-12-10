@@ -29,7 +29,7 @@ pub const Error = error{
     Win32,
 };
 
-pub const InitConfig = struct {};
+pub const Config = struct {};
 
 const Zwl = @This();
 
@@ -46,10 +46,10 @@ eventQueueSize: usize,
 eventQueue: [config.EVENT_QUEUE_SIZE]Event,
 native: platform.NativeData,
 
-pub fn init(self: *Zwl, allocator: Allocator, iConfig: InitConfig) Error!void {
+pub fn init(self: *Zwl, allocator: Allocator, _config: Config) Error!void {
     @memset(std.mem.asBytes(self), 0);
     self.allocator = allocator;
-    try self.platform.init(self, iConfig);
+    try self.platform.init(self, _config);
 }
 pub fn deinit(self: *Zwl) void {
     self.platform.deinit(self);
@@ -97,7 +97,7 @@ pub const makeContextCurrent = GLContext.makeCurrent;
 pub const swapInterval = GLContext.swapInterval;
 
 pub const Platform = struct {
-    init: *const fn (*Zwl, InitConfig) Error!void,
+    init: *const fn (*Zwl, Config) Error!void,
     deinit: *const fn (*Zwl) void,
     keyName: *const fn (*const Zwl, Key) [:0]const u8,
     window: struct {
