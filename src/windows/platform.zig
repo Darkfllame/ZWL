@@ -4,6 +4,7 @@ const init = @import("init.zig");
 const window = @import("window.zig");
 const event = @import("event.zig");
 const context = @import("context.zig");
+pub const W32 = @import("w32.zig");
 
 const Platform = Zwl.Platform;
 
