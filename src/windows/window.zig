@@ -21,10 +21,6 @@ pub const NativeWindow = struct {
     handle: W32.HWND,
     dc: W32.HDC,
 
-    var barSizeSet = false;
-    var barW: i32 = 0;
-    var barH: i32 = 0;
-
     pub fn init(self: *NativeWindow, lib: *Zwl, config: Window.Config) Error!void {
         const window: *Window = @fieldParentPtr("native", self);
         var aa = std.heap.ArenaAllocator.init(window.owner.allocator);
@@ -35,8 +31,8 @@ pub const NativeWindow = struct {
             return lib.setError("Cannot create wide title for Win32", .{}, e);
         };
 
-        const sizeLimits = config.sizeLimits;
-        const style = windowFlagsToNative(blk: {
+        const realFlags = blk: {
+            const sizeLimits = config.sizeLimits;
             var flags = config.flags;
             if (!flags.noDecoration and
                 sizeLimits.wmin != null and sizeLimits.wmax != null and
@@ -47,26 +43,21 @@ pub const NativeWindow = struct {
                 flags.resizable = false;
             }
             break :blk flags;
-        });
+        };
+        const style = windowFlagsToNative(realFlags);
+        const exStyle = windowFlagsToExNative(config.flags);
 
-        if (!barSizeSet) {
-            barW = W32.GetSystemMetrics(W32.SM_CXSIZEFRAME) +
-                W32.GetSystemMetrics(W32.SM_CXEDGE) * 2 + 8;
-            barH = W32.GetSystemMetrics(W32.SM_CYCAPTION) +
-                W32.GetSystemMetrics(W32.SM_CYSIZEFRAME) +
-                W32.GetSystemMetrics(W32.SM_CYEDGE) * 2 + 8;
-            barSizeSet = true;
-        }
+        const width, const height = getWindowFullsize(style, exStyle, config.width);
 
         const handle = W32.CreateWindowExW(
-            0,
+            exStyle,
             internal.WND_CLASS_NAME.ptr,
             wideTitle.ptr,
             style,
             @bitCast(config.x.toNumber(@bitCast(W32.CW_USEDEFAULT))),
             @bitCast(config.y.toNumber(@bitCast(W32.CW_USEDEFAULT))),
-            @as(i32, @intCast(config.width)) + barW,
-            @as(i32, @intCast(config.height)) + barH,
+            @intCast(width),
+            @intCast(height),
             null,
             null,
             lib.native.hInstance,
@@ -185,8 +176,8 @@ pub const NativeWindow = struct {
         var rect = W32.RECT{
             .left = 0,
             .top = 0,
-            .right = @as(i32, @intCast(w)) + barW,
-            .bottom = @as(i32, @intCast(h)) + barH,
+            .right = @intCast(w),
+            .bottom = @intCast(h),
         };
 
         _ = W32.AdjustWindowRectEx(
@@ -223,12 +214,13 @@ pub const NativeWindow = struct {
         var area: W32.RECT = undefined;
 
         _ = W32.GetWindowRect(window.native.handle, &area);
+        
         _ = W32.MoveWindow(
             window.native.handle,
             area.left,
             area.top,
-            area.right - area.left + barW,
-            area.bottom - area.top + barH,
+            area.right - area.left,
+            area.bottom - area.top,
             W32.TRUE,
         );
     }
@@ -573,11 +565,7 @@ fn getWindowFullsize(
     exStyle: W32.DWORD,
     contentWidth: u32,
     contentHeight: u32,
-    fullWidth: *u32,
-    fullHeight: *u32,
-    dpi: W32.UINT,
-) void {
-    _ = dpi;
+) struct { u32, u32 } {
     var rect: W32.RECT = .{
         .left = 0,
         .top = 0,
@@ -587,8 +575,10 @@ fn getWindowFullsize(
 
     _ = W32.AdjustWindowRectEx(&rect, style, W32.FALSE, exStyle);
 
-    fullWidth.* = @bitCast(rect.right - rect.left);
-    fullHeight.* = @bitCast(rect.bottom - rect.top);
+    return .{
+        @bitCast(rect.right - rect.left),
+        @bitCast(rect.bottom - rect.top),
+    };
 }
 
 pub fn getKeyMods() Key.Mods {
@@ -614,19 +604,19 @@ pub fn getKeyMods() Key.Mods {
 fn windowFlagsToNative(flags: Window.Flags) W32.DWORD {
     var style = W32.WS_CLIPSIBLINGS | W32.WS_CLIPCHILDREN;
 
-    if (!flags.hidden) {
-        style |= W32.WS_VISIBLE;
-    }
-
-    style |= W32.WS_SYSMENU | W32.WS_MINIMIZEBOX;
-
-    if (flags.noDecoration) {
+    if (flags.fullscreen) {
         style |= W32.WS_POPUP;
     } else {
-        style |= W32.WS_CAPTION;
+        style |= W32.WS_SYSMENU | W32.WS_MINIMIZEBOX;
 
-        if (flags.resizable) {
-            style |= W32.WS_MAXIMIZEBOX | W32.WS_THICKFRAME;
+        if (flags.noDecoration) {
+            style |= W32.WS_POPUP;
+        } else {
+            style |= W32.WS_CAPTION;
+
+            if (flags.resizable) {
+                style |= W32.WS_MAXIMIZEBOX | W32.WS_THICKFRAME;
+            }
         }
     }
 
@@ -636,7 +626,7 @@ fn windowFlagsToNative(flags: Window.Flags) W32.DWORD {
 fn windowFlagsToExNative(flags: Window.Flags) W32.DWORD {
     var style = W32.WS_EX_APPWINDOW;
 
-    if (flags.floating) {
+    if (flags.fullscreen or flags.floating) {
         style |= W32.WS_EX_TOPMOST;
     }
 
