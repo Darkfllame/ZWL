@@ -56,7 +56,7 @@ pub const GLContext = struct {
             return lib.setError("Cannot create GLContext", .{}, e);
         };
         errdefer allocator.destroy(self);
-        try self.init(Window, config);
+        try self.init(window, config);
         return self;
     }
     pub fn init(self: *GLContext, window: *Window, config: Config) Error!void{
