@@ -6,6 +6,7 @@ const event = @import("event.zig");
 const context = @import("context.zig");
 
 const Allocator = std.mem.Allocator;
+const Zwl = @This();
 
 pub const platform = switch (builtin.os.tag) {
     .windows => @import("windows/platform.zig"),
@@ -30,8 +31,6 @@ pub const Error = error{
 };
 
 pub const Config = struct {};
-
-const Zwl = @This();
 
 comptime platform: Platform = if (@hasDecl(platform, "platform") and @TypeOf(platform.platform) == Platform)
     platform.platform
