@@ -1,4 +1,4 @@
-//! Opengl32 bootstrap for forein compilation
+//! Opengl32 bootstrap for foreign compilation
 
 pub export fn wglCreateContext() noreturn {
     @panic("Unexpected");

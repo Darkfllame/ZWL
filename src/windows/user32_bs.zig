@@ -1,4 +1,4 @@
-//! User32 bootstrap for forein compilation
+//! User32 bootstrap for foreign compilation
 
 pub export fn GetSystemMetrics() noreturn {
     @panic("Unexpected");
@@ -115,5 +115,8 @@ pub export fn MessageBoxW() noreturn {
     @panic("Unexpected");
 }
 pub export fn ToUniform() noreturn {
+    @panic("Unexpected");
+}
+pub export fn SendMessage() noreturn {
     @panic("Unexpected");
 }

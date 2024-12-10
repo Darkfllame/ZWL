@@ -1,4 +1,4 @@
-//! Kernel32 bootstrap for forein compilation
+//! Kernel32 bootstrap for foreign compilation
 
 pub export fn GetModuleHandleW() noreturn {
     @panic("Unexpected");

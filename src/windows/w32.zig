@@ -1,12 +1,5 @@
 const std = @import("std");
 const builtin = @import("builtin");
-// const c = @cImport({
-//     @cDefine("WIN32_LEAN_AND_MEAN", "1");
-//     @cInclude("Windows.h");
-// });
-//     @cInclude("windowsx.h");
-//     @cInclude("Commctrl.h");
-// });
 
 pub const CALLBACK: std.builtin.CallingConvention = if (builtin.cpu.arch == .x86) .Stdcall else .C;
 pub const WINAPI: std.builtin.CallingConvention = if (builtin.cpu.arch == .x86) .Stdcall else .C;
@@ -53,6 +46,7 @@ pub const HWND_NOTOPMOST: HWND = @ptrFromInt(@as(usize, @truncate(-2)));
 pub const HWND_TOPMOSt: HWND = @ptrFromInt(@as(usize, @truncate(-1)));
 pub const HWND_TOP: ?HWND = @ptrFromInt(0);
 pub const HWND_BOTTOM: HWND = @ptrFromInt(1);
+pub const HWND_BROADCAST: HWND = @ptrFromInt(0xFFFF);
 
 pub const SWP_NOSIZE: UINT = 0x0001;
 pub const SWP_NOMOVE: UINT = 0x0002;
@@ -1090,6 +1084,7 @@ pub extern "User32" fn MapVirtualKeyW(uCode: UINT, uMapType: UINT) callconv(WINA
 pub extern "User32" fn GetMessageTime() callconv(WINAPI) LONG;
 pub extern "User32" fn MessageBoxW(hWnd: ?HWND, lpText: ?LPCWSTR, lpCaption: ?LPCWSTR, uType: UINT) callconv(WINAPI) i32;
 pub extern "User32" fn ToUnicode(wVirtKey: UINT, wScanCode: UINT, lpKeyState: ?*const [256]BYTE, pwszBuff: LPWSTR, cchBuff: i32, wFlags: UINT) callconv(WINAPI) i32;
+pub extern "User32" fn SendMessage(hWnd: HWND, msg: UINT, wParam: WPARAM, lParam: LPARAM) callconv(WINAPI) LRESULT;
 //#endregion
 
 //#region Comctl32
