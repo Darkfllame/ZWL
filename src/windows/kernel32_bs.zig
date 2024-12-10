@@ -6,3 +6,6 @@ pub export fn GetModuleHandleW() noreturn {
 pub export fn GetLastError() noreturn {
     @panic("Unexpected");
 }
+pub export fn SetConsoleOutputCP() noreturn {
+    @panic("Unexpected");
+}

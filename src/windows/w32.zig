@@ -619,6 +619,14 @@ pub const WGL_TYPE_COLORINDEX_ARB: i32 = 0x202C;
 pub const WGL_SAMPLE_BUFFERS_ARB: i32 = 0x2041;
 pub const WGL_SAMPLES_ARB: i32 = 0x2042;
 
+pub const CP_USASCII: UINT = 1252;
+pub const CP_UNICODE: UINT = 1200;
+pub const CP_JAUTODETECT: UINT = 50932;
+pub const CP_KAUTODETECT: UINT = 50949;
+pub const CP_ISO2022JPESC: UINT = 50221;
+pub const CP_ISO2022JPSIO: UINT = 50222;
+pub const CP_UTF8: UINT = 65001;
+
 //#region Virtual Keys
 pub const VK_LBUTTON: UINT = 0x01;
 pub const VK_RBUTTON: UINT = 0x02;
@@ -1041,6 +1049,7 @@ pub inline fn FAILED(hr: HRESULT) bool {
 //#region Kernel32
 pub extern "Kernel32" fn GetModuleHandleW(lpModuleName: ?LPCWSTR) callconv(WINAPI) HMODULE;
 pub extern "Kernel32" fn GetLastError() callconv(WINAPI) DWORD;
+pub extern "Kernel32" fn SetConsoleOutputCP(wCodePageID: UINT) callconv(WINAPI) BOOL;
 //#endregion
 
 //#region User32
