@@ -1,6 +1,5 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const config = @import("config");
 const Zwl = @import("Zwl.zig");
 
 const Error = Zwl.Error;
@@ -50,22 +49,30 @@ pub const GLContext = struct {
         samples: u8 = 0,
     };
 
-    pub fn create(window: *Window, ctxConfig: Config) Error!*GLContext {
+    pub fn create(window: *Window, config: Config) Error!*GLContext {
         const lib = window.owner;
         const allocator = lib.allocator;
         const self = allocator.create(GLContext) catch |e| {
             return lib.setError("Cannot create GLContext", .{}, e);
         };
         errdefer allocator.destroy(self);
-        self.owner = window;
-        self.config = ctxConfig;
-        try lib.platform.glContext.init(&self.native, lib, window, ctxConfig);
+        try self.init(Window, config);
         return self;
+    }
+    pub fn init(self: *GLContext, window: *Window, config: Config) Error!void{
+        const lib = window.owner;
+        self.owner = window;
+        self.config = config;
+        try lib.platform.glContext.init(&self.native, lib, window, config);
     }
     pub fn destroy(self: *GLContext) void {
         const lib = self.owner.owner;
-        lib.platform.glContext.deinit(&self.native);
+        self.deinit();
         lib.allocator.destroy(self);
+    }
+    pub fn deinit(self: *GLContext) void {
+        const lib = self.owner.owner;
+        lib.platform.glContext.deinit(&self.native);
     }
 
     pub fn makeCurrent(lib: *Zwl, opt_ctx: ?*GLContext) Error!void {

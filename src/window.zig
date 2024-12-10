@@ -1,6 +1,5 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const config = @import("config");
 const Zwl = @import("Zwl.zig");
 
 const Allocator = std.mem.Allocator;
@@ -25,23 +24,20 @@ pub const Window = struct {
     native: Zwl.platform.Window,
 
     pub const Flags = packed struct {
-        /// Note:
-        /// - Win32:
-        ///     if `noDecoration` is active, this field
-        ///     is not used.
         resizable: bool = false,
         hidden: bool = false,
         noDecoration: bool = false,
         floating: bool = false,
         hideMouse: bool = false,
         hasFocus: bool = false,
+        fullscreen: bool = false,
     };
 
     pub const Position = union(enum) {
         default,
         pos: u32,
 
-        pub fn toNumber(self: Position, comptime default: u32) u32 {
+        pub inline fn toNumber(self: Position, default: u32) u32 {
             return switch (self) {
                 .default => default,
                 .pos => |pos| pos,
@@ -108,43 +104,47 @@ pub const Window = struct {
         icon: MBIcon = .none,
     };
 
-    pub fn create(owner: *Zwl, _config: Config) Error!*Window {
+    pub fn create(owner: *Zwl, config: Config) Error!*Window {
         const self = owner.allocator.create(Window) catch |e| {
             return owner.setError("Cannot allocate window", .{}, e);
         };
         errdefer owner.allocator.destroy(self);
-
-        std.debug.assert((_config.sizeLimits.wmin orelse 0) <
-            (_config.sizeLimits.wmax orelse MAX_U32));
-        std.debug.assert((_config.sizeLimits.hmin orelse 0) <
-            (_config.sizeLimits.hmax orelse MAX_U32));
+        try self.init(owner, config);
+        return self;
+    }
+    pub fn init(self: *Window, owner: *Zwl, config: Config) Error!void {
+        std.debug.assert((config.sizeLimits.wmin orelse 0) <
+            (config.sizeLimits.wmax orelse MAX_U32));
+        std.debug.assert((config.sizeLimits.hmin orelse 0) <
+            (config.sizeLimits.hmax orelse MAX_U32));
 
         self.* = Window{
             .owner = owner,
-            .config = _config,
+            .config = config,
             .native = undefined,
         };
 
-        self.config.title = owner.allocator.dupe(u8, _config.title) catch |e| {
+        self.config.title = owner.allocator.dupe(u8, config.title) catch |e| {
             return owner.setError("Cannot copy window title", .{}, e);
         };
         errdefer owner.allocator.free(self.config.title);
 
-        try owner.platform.window.init(&self.native, owner, _config);
+        try owner.platform.window.init(&self.native, owner, config);
         errdefer owner.platform.window.deinit(&self.native);
-
-        return self;
-    }
-
-    pub fn createMessageBox(owner: *Zwl, _config: MBConfig) Error!MBButton {
-        return owner.platform.window.createMessageBox(owner, _config);
     }
 
     pub fn destroy(self: *Window) void {
+        self.deinit();
+        self.owner.allocator.destroy(self);
+    }
+    pub fn deinit(self: *Window) void {
         self.setMouseConfined(false);
         self.owner.allocator.free(self.config.title);
         self.owner.platform.window.deinit(&self.native);
-        self.owner.allocator.destroy(self);
+    }
+
+    pub fn createMessageBox(owner: *Zwl, config: MBConfig) Error!MBButton {
+        return owner.platform.window.createMessageBox(owner, config);
     }
 
     pub const createGLContext = GLContext.create;
